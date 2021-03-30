@@ -53,7 +53,7 @@ class GlobSpec extends AnyWordSpecCompat {
       Glob.compile("\\?") === Glob.LiteralPattern("?")
       Glob.compile("*") === Glob.AnyStringPattern
       Glob.compile("\\*") === Glob.LiteralPattern("*")
-      Glob.compile("**") === Glob.AnyPathPattern
+      Glob.compile("**") === Glob.AnythingPattern
       Glob.compile("[]") === Glob.LiteralPattern("[]")
       Glob.compile("[abc]") === Glob.BracketPattern("abc")
       Glob.compile("[a-z]") === Glob.BracketPattern("a-z")
@@ -208,13 +208,9 @@ class GlobSpec extends AnyWordSpecCompat {
 
       val m4 = Glob.compile("a?b").matcher("abc")
       m4.find === false
-      m4.start === 0
-      m4.end === 2
 
       val m5 = Glob.compile("?a").matcher("ab")
       m5.find === false
-      m5.start === 0
-      m5.end === 1
 
       Glob.compile("a?a").matcher("aaa").find === true
 
@@ -421,7 +417,7 @@ class GlobSpec extends AnyWordSpecCompat {
       m14.start === 2
       m14.end === 17
 
-      // Glob.compile("*").matcher("/a/b/").find === true
+      //Glob.compile("*").matcher("/a/b/").find === true
       // Glob.compile("*/*").matcher("/a/b/").find === true
       // Glob.compile("/*/*").matcher("/a/b/").find === true
       // Glob.compile("/*/").matcher("/a/b/").find === true

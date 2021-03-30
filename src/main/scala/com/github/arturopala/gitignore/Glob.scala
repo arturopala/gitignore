@@ -16,8 +16,6 @@
 
 package com.github.arturopala.gitignore
 
-import scala.annotation.tailrec
-
 /** Globbing pathnames.
   *
   * Wildcard pattern matcher implementing the same rules as
@@ -101,7 +99,7 @@ object Glob {
           if (acc.isEmpty)
             ps match {
               case AnyStringPattern :: ps2 =>
-                (AnyPathPattern :: ps2, "", true, true)
+                (AnythingPattern :: ps2, "", true, true)
               case _ =>
                 (AnyStringPattern :: ps, "", true, true)
             }
@@ -147,7 +145,7 @@ object Glob {
      * Gives access to matching result and details.
      */
     final def matcher(value: String): Matcher =
-      new LeftToRightMatcher(value, this)
+      Matcher(value, this)
 
   }
 
@@ -161,10 +159,12 @@ object Glob {
   /** A type of pattern with variable match length,
     * which can possibly consume nothing or all the remaining input.
     */
-  sealed trait GreedyPattern extends Pattern
+  sealed trait WildcardPattern extends Pattern {
+    def minWidth: Int = 0
+  }
 
   /** A type of pattern matching single character only. */
-  sealed trait SingleCharacterPattern extends Pattern with CharacterCheck
+  sealed trait SingleCharacterPattern extends Pattern with WildcardPattern with CharacterCheck
 
   /** A pattern consisting of a sequence of nested patterns. */
   final case class CompositePattern(patterns: List[Pattern]) extends Pattern
@@ -173,14 +173,15 @@ object Glob {
   final case class LiteralPattern(literal: String) extends Pattern
 
   /** A wildcard pattern matching anything but path separator '/' character. */
-  final case object AnyStringPattern extends Pattern with GreedyPattern
+  final case object AnyStringPattern extends Pattern with WildcardPattern
 
   /** A wildcard pattern matching anything, inluding path separator. */
-  final case object AnyPathPattern extends Pattern with GreedyPattern
+  final case object AnythingPattern extends Pattern with WildcardPattern
 
   /** A wildcard pattern matching any single character except path separator '/' character. */
   final object AnySingleCharacterPattern extends Pattern with SingleCharacterPattern {
     override def check(c: Char): Boolean = c != '/'
+    override def minWidth: Int = 1
   }
 
   /** A wildcard pattern matching either class or range of characters. */
@@ -266,238 +267,78 @@ object Glob {
     /** Find if the pattern matches part of the argument string. */
     def find(): Boolean
 
-    /** Start position of the match. (inclusive) */
+    /** Start position of the match, if any (inclusive). */
     def start(): Int
 
-    /** End position of the match (exclusive). */
+    /** End position of the match, if any (exclusive). */
     def end(): Int
   }
 
-  private final class LeftToRightMatcher(value: String, pattern: Pattern) extends Matcher {
+  final object Matcher {
 
-    private var result: Int = -1 // Result: -1 undefined, 0 failure, 1 success
-    private var pos: Int = 0 // Cursor position on the left side
-    private var min: Int = -1 // Leftmost index of the match
-    private var max: Int = -1 // Rightmost index of the match
-    private var sticky: Boolean = false // Should we check if matched regions leave no gaps? true - check, false - not
-
-    final def start(): Int = min
-    final def end(): Int = max
-
-    final def find(): Boolean =
-      if (result < 0) apply(pattern)
-      else result > 0
-
-    final def apply(b: Boolean): Boolean = {
-      sticky = b
-      apply(pattern)
-    }
-
-    private def apply(pattern: Pattern): Boolean = {
-      if (result != 0) {
-        if (debug)
-          println(s">> LeftToRight sticky=$sticky pos=$pos min=$min max=$max value=$value pattern=$pattern")
-        pattern match {
-          case CompositePattern(patterns) =>
-            applyList(patterns)
-
-          case LiteralPattern(literal) =>
-            val mark = pos
-            val i = value.indexOf(literal, pos)
-            if (i >= pos) {
-              min =
-                if (min == -1) i
-                else Math.min(min, i)
-              max = i + literal.length()
-              pos = max
-              result =
-                if (sticky && i > mark) 0
-                else {
-                  sticky = true
-                  1
-                }
-            } else {
-              result = 0
-            }
-
-          case p: SingleCharacterPattern =>
-            if (pos < value.length() && p.check(value(pos))) {
-              min = if (min == -1) pos else min
-              max = pos + 1
-              pos = max
-              result = 1
-            } else {
-              result = 0
-            }
-
-          case AnyStringPattern =>
-            val i = value.indexOf('/', pos)
-            min = if (min == -1) pos else min
-            max = if (i == -1) value.length() else i
-            result = if (max == value.length()) 1 else 0
-
-          case AnyPathPattern =>
-            min = if (min == -1) pos else min
-            max = value.length()
-            pos = max
-            result = 1
-        }
+    def apply(value: String, pattern: Pattern): Matcher = {
+      lazy val (f, s, e) = find(value, pattern)
+      new Matcher {
+        override def find(): Boolean = f
+        override def start(): Int = if (s == Int.MaxValue) -1 else s
+        override def end(): Int = if (e == Int.MinValue) -1 else e
       }
-      if (debug)
-        println(s"<< $result LeftToRight sticky=$sticky pos=$pos min=$min max=$max value=$value pattern=$pattern")
-      result > 0
     }
 
-    @tailrec
-    private def applyList(patterns: List[Pattern]): Unit =
+    private def find(value: String, pattern: Pattern): (Boolean, Int, Int) = {
+      val zoom = Zoom(value)
+      val result = findA(zoom, pattern, leftToRight = true, adjacent = false, level = 0)
+      (result, zoom.start, zoom.end)
+    }
+
+    private def findA(zoom: Zoom, pattern: Pattern, leftToRight: Boolean, adjacent: Boolean, level: Int): Boolean =
+      pattern match {
+        case CompositePattern(patterns) =>
+          findB(zoom, patterns, leftToRight, adjacent, level)
+
+        case LiteralPattern(literal) =>
+          if (leftToRight) zoom.lookupRightFor(literal, if (adjacent) 0 else Int.MaxValue)
+          else zoom.lookupLeftFor(literal, if (adjacent) 0 else Int.MaxValue)
+
+        case p: SingleCharacterPattern =>
+          if (leftToRight) zoom.lookupRightWhile(p.check, 1)
+          else zoom.lookupLeftWhile(p.check, 1)
+
+        case AnyStringPattern =>
+          if (leftToRight) zoom.lookupRightUntil(_ == '/')
+          else zoom.lookupLeftUntil(_ == '/')
+
+        case AnythingPattern =>
+          if (leftToRight) zoom.takeAllRight()
+          else zoom.takeAllLeft()
+      }
+
+    private def findB(
+      zoom: Zoom,
+      patterns: List[Pattern],
+      leftToRight: Boolean,
+      adjacent: Boolean,
+      level: Int
+    ): Boolean =
       patterns match {
-        case Nil => ()
+        case Nil => false
 
         case p :: Nil =>
-          apply(p)
+          findA(zoom, p, leftToRight, adjacent, level)
 
-        case (g: GreedyPattern) :: ps =>
-          val mark = pos
-          val m =
-            new RightToLeftMatcher(value.substring(pos), CompositePattern(ps.reverse))
-
-          if (m.find()) {
-            min = if (min == -1) pos + m.start() else min
-            max = if (max == -1) pos + m.end() else Math.max(max, pos + m.end())
-            pos = max
-            result =
-              if (m.start() == 0) 1
-              else {
-                val value2 = value.substring(mark, mark + m.start())
-                val m2 = new LeftToRightMatcher(value2, g)
-                if (m2.apply(true) && m2.start() == 0 && m2.end() == value2.length()) {
-                  min = Math.min(min, mark)
-                  1
-                } else 0
-              }
-          } else {
-            result = 0
-          }
+        case (g: WildcardPattern) :: ps =>
+          Debug.debug(s"$level: wildcard!")
+          val zoom1 = zoom.copyAndResetContour
+          zoom1.shiftFocus(g.minWidth, leftToRight)
+          findB(zoom1, ps.reverse, !leftToRight, false, level + 1) &&
+          zoom1.frame(zoom, leftToRight) &&
+          findA(zoom1, g, !leftToRight, true, level + 1) &&
+          zoom.merge(zoom1)
 
         case p :: ps =>
-          if (apply(p)) {
-            applyList(ps)
-          }
-      }
-  }
-
-  private final class RightToLeftMatcher(value: String, pattern: Pattern) extends Matcher {
-
-    private var result: Int = -1 // Result: -1 undefined, 0 failure, 1 success
-    private var pos: Int = value.length // Cursor position on the left side
-    private var min: Int = -1 // Leftmost index of the match
-    private var max: Int = -1 // Rightmost index of the match
-    private var sticky: Boolean = false // Should we check if matched regions leave no gaps? true - check, false - not
-
-    final def start(): Int = min
-    final def end(): Int = max
-
-    final def find(): Boolean =
-      if (result < 0) apply(pattern)
-      else result > 0
-
-    final def apply(b: Boolean): Boolean = {
-      sticky = b
-      apply(pattern)
-    }
-
-    private def apply(pattern: Pattern): Boolean = {
-      if (result != 0) {
-        if (debug)
-          println(s">> RightToLeft sticky=$sticky pos=$pos min=$min max=$max value=$value pattern=$pattern")
-        pattern match {
-          case CompositePattern(patterns) =>
-            applyList(patterns)
-
-          case LiteralPattern(literal) =>
-            val mark = pos
-            val i = value.lastIndexOf(literal, pos)
-            if (i >= 0) {
-              max =
-                if (max == -1) i + literal.length()
-                else Math.max(max, i + literal.length())
-              min = i
-              pos = min
-              result =
-                if (sticky && (i + literal.length() != mark)) 0
-                else {
-                  sticky = true
-                  1
-                }
-            } else {
-              result = 0
-            }
-
-          case p: SingleCharacterPattern =>
-            if (pos > 0 && p.check(value(pos - 1))) {
-              max = if (max == -1) pos else max
-              min = pos - 1
-              pos = min
-              result = 1
-            } else {
-              result = 0
-            }
-
-          case AnyStringPattern =>
-            val i = value.lastIndexOf('/', pos)
-            min = if (i == -1) 0 else i + 1
-            max = if (max == -1) pos else max
-            result = if (min == 0) 1 else 0
-
-          case AnyPathPattern =>
-            max = if (max == -1) pos else max
-            min = 0
-            pos = min
-            result = 1
-        }
-      }
-      if (debug)
-        println(s"<< $result RightToLeft sticky=$sticky pos=$pos min=$min max=$max value=$value pattern=$pattern")
-      result > 0
-    }
-
-    @tailrec
-    private def applyList(patterns: List[Pattern]): Unit =
-      patterns match {
-        case Nil => ()
-
-        case p :: Nil =>
-          apply(p)
-
-        case (g: GreedyPattern) :: ps =>
-          val mark = pos
-          val m =
-            new LeftToRightMatcher(value.substring(0, pos), CompositePattern(ps.reverse))
-
-          if (m.find()) {
-            max = if (max == -1) m.end() else max
-            min = if (min == -1) m.start() else Math.min(min, m.start())
-            pos = min
-            result =
-              if (m.end() == mark) 1
-              else {
-                val value2 = value.substring(m.end(), mark)
-                val m2 = new RightToLeftMatcher(value2, g)
-                if (m2.apply(true) && m2.start() == 0 && m2.end() == value2.length()) {
-                  max = Math.max(max, mark)
-                  1
-                } else 0
-              }
-          } else {
-            result = 0
-          }
-
-        // restart search
-
-        case p :: ps =>
-          if (apply(p)) {
-            applyList(ps)
-          }
+          if (findA(zoom, p, leftToRight, adjacent, level)) {
+            findB(zoom, ps, leftToRight, true, level)
+          } else false
       }
   }
 

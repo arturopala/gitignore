@@ -17,6 +17,20 @@
             "request": "launch",
             "testClass": "com.github.arturopala.gitignore.GlobSpec",
             "buildTarget": "rootJVM-test"
+        },
+        {
+            "type": "scala",
+            "name": "DebugSpec",
+            "request": "launch",
+            "testClass": "com.github.arturopala.gitignore.DebugSpec",
+            "buildTarget": "rootJVM-test"
+        },
+        {
+            "type": "scala",
+            "name": "ZoomSpec",
+            "request": "launch",
+            "testClass": "com.github.arturopala.gitignore.ZoomSpec",
+            "buildTarget": "rootJVM-test"
         }
     ]
 }
