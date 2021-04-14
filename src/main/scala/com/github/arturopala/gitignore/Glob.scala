@@ -75,8 +75,6 @@ package com.github.arturopala.gitignore
   */
 object Glob {
 
-  val debug: Boolean = false
-
   final def isWildcardPattern(pattern: String): Boolean =
     pattern.foldLeft(false) { (a, c) =>
       a || (c match {
@@ -147,6 +145,8 @@ object Glob {
     final def matcher(value: String): Matcher =
       Matcher(value, this)
 
+    def minWidth: Int
+
   }
 
   /** Character check defined between brackets, either class or range. */
@@ -160,17 +160,23 @@ object Glob {
     * which can possibly consume nothing or all the remaining input.
     */
   sealed trait WildcardPattern extends Pattern {
-    def minWidth: Int = 0
+    override val minWidth: Int = 0
   }
 
   /** A type of pattern matching single character only. */
-  sealed trait SingleCharacterPattern extends Pattern with WildcardPattern with CharacterCheck
+  sealed trait SingleCharacterPattern extends Pattern with WildcardPattern with CharacterCheck {
+    override val minWidth: Int = 1
+  }
 
   /** A pattern consisting of a sequence of nested patterns. */
-  final case class CompositePattern(patterns: List[Pattern]) extends Pattern
+  final case class CompositePattern(patterns: List[Pattern]) extends Pattern {
+    override val minWidth: Int = patterns.foldLeft(0)(_ + _.minWidth)
+  }
 
   /** A pattern matching literally, without any wildcards. */
-  final case class LiteralPattern(literal: String) extends Pattern
+  final case class LiteralPattern(literal: String) extends Pattern {
+    override val minWidth: Int = literal.length()
+  }
 
   /** A wildcard pattern matching anything but path separator '/' character. */
   final case object AnyStringPattern extends Pattern with WildcardPattern
@@ -181,7 +187,6 @@ object Glob {
   /** A wildcard pattern matching any single character except path separator '/' character. */
   final object AnySingleCharacterPattern extends Pattern with SingleCharacterPattern {
     override def check(c: Char): Boolean = c != '/'
-    override def minWidth: Int = 1
   }
 
   /** A wildcard pattern matching either class or range of characters. */
@@ -286,8 +291,21 @@ object Glob {
     }
 
     private def find(value: String, pattern: Pattern): (Boolean, Int, Int) = {
+      Debug.debug(s"Finding $pattern in $value")
       val zoom = Zoom(value)
-      val result = findA(zoom, pattern, leftToRight = true, adjacent = false, level = 0)
+      var result = findA(zoom, pattern, leftToRight = true, adjacent = false, level = 0)
+      var continue = !result
+      val maxTop = zoom.maxElseTop
+      Debug.debug(s"max top $maxTop\n   $zoom")
+      if (continue && zoom.closeUpFrameAndResetContour(0, value.length(), maxTop, pattern.minWidth)) {
+        while (continue) {
+          Debug.debug("-" * 32)
+          val (prevFrom, prevTo) = zoom.frame
+          result = findA(zoom, pattern, leftToRight = true, adjacent = false, level = 0)
+          continue = !result && zoom.closeUpFrameAndResetContour(prevFrom, prevTo, maxTop, pattern.minWidth)
+        }
+      }
+      Debug.debug(s"Found $result at (${zoom.start},${zoom.end})")
       (result, zoom.start, zoom.end)
     }
 
@@ -305,12 +323,12 @@ object Glob {
           else zoom.lookupLeftWhile(p.check, 1)
 
         case AnyStringPattern =>
-          if (leftToRight) zoom.lookupRightUntil(_ == '/')
-          else zoom.lookupLeftUntil(_ == '/')
+          if (leftToRight) zoom.lookupRightUntil(_ == '/', minSteps = 0)
+          else zoom.lookupLeftUntil(_ == '/', minSteps = 0)
 
         case AnythingPattern =>
-          if (leftToRight) zoom.takeAllRight()
-          else zoom.takeAllLeft()
+          if (leftToRight) zoom.takeAllFromLeft()
+          else zoom.takeAllFromRight()
       }
 
     private def findB(
@@ -328,10 +346,10 @@ object Glob {
 
         case (g: WildcardPattern) :: ps =>
           Debug.debug(s"$level: wildcard!")
-          val zoom1 = zoom.copyAndResetContour
-          zoom1.shiftFocus(g.minWidth, leftToRight)
+          val zoom1 = zoom.copyFrameAndResetContour
+          zoom1.resizeFrame(g.minWidth, leftToRight)
           findB(zoom1, ps.reverse, !leftToRight, false, level + 1) &&
-          zoom1.frame(zoom, leftToRight) &&
+          zoom1.flipFrame(zoom, leftToRight) &&
           findA(zoom1, g, !leftToRight, true, level + 1) &&
           zoom.merge(zoom1)
 

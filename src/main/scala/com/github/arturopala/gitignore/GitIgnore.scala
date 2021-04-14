@@ -35,11 +35,8 @@ case class GitIgnore(gitPatterns: Seq[String]) {
 
   import GitIgnore._
 
-  lazy val patterns: Seq[Pattern] = {
-    val x = gitPatterns.map(parseGitPattern)
-    println(x)
-    x
-  }
+  lazy val patterns: Seq[Pattern] =
+    gitPatterns.map(parseGitPattern)
 
   final def isIgnored(path: Path): Boolean =
     isIgnored(
@@ -68,12 +65,14 @@ case class GitIgnore(gitPatterns: Seq[String]) {
     !isIgnored(path, isDirectory)
 
   /** Path may end with slash [/] only if it denotes a directory. */
-  final def isIgnored(path: String): Boolean =
+  final def isIgnored(path: String): Boolean = {
+    Debug.debug(patterns.mkString("\n"))
     patterns
       .foldLeft[Vote](Abstain)((vote, pattern) => Vote.combine(vote, pattern.isIgnored(ensureStartSlash(path)))) match {
       case Ignore(_)             => true
       case Abstain | Unignore(_) => false
     }
+  }
 
   final def isAllowed(path: String): Boolean =
     !isIgnored(path)
@@ -220,12 +219,13 @@ object GitIgnore {
   /** Re-usable matcher instance. */
   object Matcher {
     def apply(gitPattern: String): Matcher =
-      if (RegexpMatcher.isRegexpPattern(gitPattern))
-        RegexpMatcher(gitPattern)
-      else if (Glob.isWildcardPattern(gitPattern))
+      // if (RegexpMatcher.isRegexpPattern(gitPattern))
+      //   RegexpMatcher(gitPattern)
+      // else
+      if (Glob.isWildcardPattern(gitPattern))
         GlobMatcher(gitPattern)
       else
-        LiteralMatcher(RegexpMatcher.unescape(gitPattern))
+        LiteralMatcher(unescape(gitPattern))
   }
 
   /** Matches path literally with Git pattern. */
@@ -247,9 +247,7 @@ object GitIgnore {
 
     final override def isPartOf(path: String): Int = {
       val m = pattern.matcher(path)
-      val r = if (m.find()) m.end else NONE
-      println(s"$gitPattern isPartOf $path = $r : ${pattern.pattern()}")
-      r
+      if (m.find()) m.end else NONE
     }
 
     final override def isPrefixOf(path: String): Int = {
@@ -271,21 +269,21 @@ object GitIgnore {
     final override def isPartOf(path: String): Int = {
       val m = pattern.matcher(path)
       val r = if (m.find()) m.end else NONE
-      println(s"$gitPattern isPartOf $path = $r")
+      Debug.debug(s"$gitPattern isPartOf $path = $r")
       r
     }
 
     final override def isPrefixOf(path: String): Int = {
       val m = pattern.matcher(path)
       val r = if (m.find() && m.start() == 0) m.end else NONE
-      println(s"$gitPattern isPrefixOf $path = $r")
+      Debug.debug(s"$gitPattern isPrefixOf $path = $r")
       r
     }
 
     final override def isSuffixOf(path: String): Int = {
       val m = pattern.matcher(path)
       val r = if (m.find() && m.end() == path.length) m.end else NONE
-      println(s"$gitPattern isSuffixOf $path = $r")
+      Debug.debug(s"$gitPattern isSuffixOf $path = $r")
       r
     }
   }
@@ -331,13 +329,13 @@ object GitIgnore {
 
       java.util.regex.Pattern.compile(buffer.toString)
     }
-
-    final def unescape(s: String): String =
-      s.replaceAllLiterally("\\*", "*")
-        .replaceAllLiterally("\\?", "?")
-        .replaceAllLiterally("\\[", "[")
-        .replaceAllLiterally("\\ ", " ")
   }
+
+  private def unescape(s: String): String =
+    s.replaceAllLiterally("\\*", "*")
+      .replaceAllLiterally("\\?", "?")
+      .replaceAllLiterally("\\[", "[")
+      .replaceAllLiterally("\\ ", " ")
 
   private def ensureStartSlash(s: String): String =
     if (s.startsWith("/")) s else "/" + s
@@ -365,8 +363,11 @@ object GitIgnore {
 
   private implicit class StringExtensions(val string: String) extends AnyVal {
     final def endOfMatch(word: String): Int = {
+      Debug.debug(s"endOfMatch $word in $string")
       val i = string.indexOf(word)
-      if (i < 0) NONE else i + word.length()
+      val r = if (i < 0) NONE else i + word.length()
+      Debug.debug(s"   $r")
+      r
     }
   }
 }

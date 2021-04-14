@@ -16,8 +16,9 @@
 
 package com.github.arturopala.gitignore
 
-class DebugSpec extends AnyWordSpecCompat {
+import java.nio.file.Paths
 
-  Glob.compile("/ab/*/*/*/ba/").matcher("/ab/cd/efg/h_ijg/ba/").find === true
+class DebugSpec extends AnyWordSpecCompat {
+  Debug.isDebug = true
 
 }

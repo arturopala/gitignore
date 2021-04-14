@@ -493,10 +493,14 @@ class GitIgnoreSpec extends AnyWordSpecCompat {
       GitIgnore(Seq("/src", "!**/")).isIgnored(path, false) shouldBe true
       GitIgnore(Seq("src/", "!**/")).isIgnored(path, false) shouldBe true
       GitIgnore(Seq("/src/", "!**/")).isIgnored(path, false) shouldBe true
-      GitIgnore(Seq("src", "!**/*")).isIgnored(path, false) shouldBe true
-      GitIgnore(Seq("/src", "!**/*")).isIgnored(path, false) shouldBe true
-      GitIgnore(Seq("src/", "!**/*")).isIgnored(path, false) shouldBe true
-      GitIgnore(Seq("/src/", "!**/*")).isIgnored(path, false) shouldBe true
+      GitIgnore(Seq("src", "!**/*")).isIgnored(path, false) shouldBe false
+      GitIgnore(Seq("src", "!/**/*")).isIgnored(path, false) shouldBe true
+      GitIgnore(Seq("/src", "!**/*")).isIgnored(path, false) shouldBe false
+      GitIgnore(Seq("/src", "!/**/*")).isIgnored(path, false) shouldBe true
+      GitIgnore(Seq("src/", "!**/*")).isIgnored(path, false) shouldBe false
+      GitIgnore(Seq("src/", "!/**/*")).isIgnored(path, false) shouldBe true
+      GitIgnore(Seq("/src/", "!**/*")).isIgnored(path, false) shouldBe false
+      GitIgnore(Seq("/src/", "!/**/*")).isIgnored(path, false) shouldBe true
       GitIgnore(Seq("/src/", "!/src/")).isIgnored(path, false) shouldBe false
       GitIgnore(Seq("/src/", "!src/")).isIgnored(path, false) shouldBe false
       GitIgnore(Seq("/src/", "!/src")).isIgnored(path, false) shouldBe false
@@ -505,8 +509,10 @@ class GitIgnoreSpec extends AnyWordSpecCompat {
       GitIgnore(Seq("/src/", "!src", "**/main")).isIgnored(path, false) shouldBe true
       GitIgnore(Seq("/src/", "!src", "**/main", "!main")).isIgnored(path, false) shouldBe false
       GitIgnore(Seq("**/", "!main")).isIgnored(path, false) shouldBe false
-      GitIgnore(Seq("**/*", "!main")).isIgnored(path, false) shouldBe false
-      GitIgnore(Seq("/src/", "!src", "**/*", "!main")).isIgnored(path, false) shouldBe false
+      GitIgnore(Seq("**/*", "!main")).isIgnored(path, false) shouldBe true
+      GitIgnore(Seq("/**/*", "!main")).isIgnored(path, false) shouldBe false
+      GitIgnore(Seq("/src/", "!src", "**/*", "!main")).isIgnored(path, false) shouldBe true
+      GitIgnore(Seq("/src/", "!src", "/**/*", "!main")).isIgnored(path, false) shouldBe false
       GitIgnore(Seq("*/", "!main")).isIgnored(path, false) shouldBe true
       GitIgnore(Seq("*/*", "!main")).isIgnored(path, false) shouldBe false
       GitIgnore(Seq("/src/", "!src", "*/*", "!main")).isIgnored(path, false) shouldBe false

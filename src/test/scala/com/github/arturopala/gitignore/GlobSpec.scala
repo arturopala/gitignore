@@ -18,6 +18,8 @@ package com.github.arturopala.gitignore
 
 class GlobSpec extends AnyWordSpecCompat {
 
+  Debug.isDebug = false
+
   "Glob" should {
     "check if pattern has wildcards" in {
       Glob.isWildcardPattern("a") === false
@@ -416,16 +418,6 @@ class GlobSpec extends AnyWordSpecCompat {
       m14.find === true
       m14.start === 2
       m14.end === 17
-
-      //Glob.compile("*").matcher("/a/b/").find === true
-      // Glob.compile("*/*").matcher("/a/b/").find === true
-      // Glob.compile("/*/*").matcher("/a/b/").find === true
-      // Glob.compile("/*/").matcher("/a/b/").find === true
-      // Glob.compile("/*/*/").matcher("/a/b/").find === true
-      // Glob.compile("/**/").matcher("/a/b/").find === true
-      // Glob.compile("/**").matcher("/a/b/").find === true
-      // Glob.compile("**/").matcher("/a/b/").find === true
-      // Glob.compile("**").matcher("/a/b/").find === true
     }
 
     "compile mixed ? and * and literal pattern, and match the string" in {
@@ -629,7 +621,9 @@ class GlobSpec extends AnyWordSpecCompat {
       Glob.compile("a?b").matcher("a/b").find === false
       Glob.compile("a/b").matcher("a/b").find === true
       Glob.compile("a?/?b").matcher("ac/db").find === true
-      Glob.compile("*").matcher("/").find === false
+      Glob.compile("*").matcher("/").find === true
+      Glob.compile("?").matcher("/").find === false
+      Glob.compile("/").matcher("/").find === true
       Glob.compile("a*b").matcher("ac/db").find === false
       Glob.compile("a*/*b").matcher("ac/db").find === true
       Glob.compile("a/*b").matcher("a/cdb").find === true
@@ -645,6 +639,20 @@ class GlobSpec extends AnyWordSpecCompat {
       Glob.compile("/ab/*/*/?_*/ba/").matcher("/ab/cd/efg/hijg/ba/").find === false
       Glob.compile("/ab/*/*/?_?j*/ba/").matcher("/ab/cd/efg/h_ijg/ba/").find === true
       Glob.compile("/ab/*/*/?_?j*/ba/").matcher("/ab/cd/efg/h-ijg/ba/").find === false
+    }
+
+    "compile wildcard pattern and match the string recursively" in {
+      Glob.compile("*").matcher("/a/b/").find === true
+      Glob.compile("/*").matcher("/a/b/").find === true
+      Glob.compile("*/").matcher("/a/b/").find === true
+      Glob.compile("*/*").matcher("/a/b/").find === true
+      Glob.compile("/*/*").matcher("/a/b/").find === true
+      Glob.compile("/*/").matcher("/a/b/").find === true
+      Glob.compile("/*/*/").matcher("/a/b/").find === true
+      Glob.compile("/**/").matcher("/a/b/").find === true
+      Glob.compile("/**").matcher("/a/b/").find === true
+      Glob.compile("**/").matcher("/a/b/").find === true
+      Glob.compile("**").matcher("/a/b/").find === true
     }
   }
 
