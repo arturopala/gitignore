@@ -19,7 +19,7 @@ package com.github.arturopala.gitignore
 /** A Mutable wrapper of the string
   * helping to track lookup operations results.
   */
-final case class Zoom(value: String) {
+final class Zoom(value: String) {
 
   private var from: Int = 0
   private var to: Int = value.length()
@@ -31,18 +31,32 @@ final case class Zoom(value: String) {
   def frame: (Int, Int) = (from, to)
   def left: Int = from
   def right: Int = to
-  def contour: (Int, Int) = (min, max)
-  def hasContour: Boolean = max >= 0 && min <= value.length()
   def isEmpty: Boolean = from >= to
   def nonEmpty: Boolean = from < to
   def frameWidth: Int = Math.max(0, to - from)
+
+  def contour: (Int, Int) = (min, max)
+  def hasContour: Boolean = max >= 0 && min <= value.length() && min <= max
+  def contourLength: Int = if (hasContour) max - min else 0
 
   def minElseBottom: Int = if (min != Int.MaxValue) min else 0
   def maxElseTop: Int = if (max != Int.MinValue) max else value.length
   def minElseTop: Int = if (min != Int.MaxValue) min else value.length
   def maxElseBottom: Int = if (max != Int.MinValue) max else 0
 
-  /** Lookup for given string from the left side. */
+  def setFrame(from: Int, to: Int): Zoom = {
+    this.from = Math.max(Math.min(from, value.length() - 1), 0)
+    this.to = Math.min(value.length(), Math.max(from, to))
+    this
+  }
+
+  def resetContour: Zoom = {
+    min = Int.MaxValue
+    max = Int.MinValue
+    this
+  }
+
+  /** Lookup for the given string from the left side. */
   def lookupRightFor(string: String, maxDistance: Int = Int.MaxValue): Boolean =
     nonEmpty && {
       Debug.debug(s"lookupRightFor${if (maxDistance == Int.MaxValue) "" else "(adjacent)"}: $string\n   $this")
@@ -56,7 +70,7 @@ final case class Zoom(value: String) {
       }
     }
 
-  /** Lookup for given string from the right side. */
+  /** Lookup for the given string from the right side. */
   def lookupLeftFor(string: String, maxDistance: Int = Int.MaxValue): Boolean =
     nonEmpty && {
       Debug.debug(s"lookupLeftFor${if (maxDistance == Int.MaxValue) "" else "(adjacent)"}: $string\n   $this")
@@ -68,6 +82,22 @@ final case class Zoom(value: String) {
         Debug.debug(s"=> $this")
         true
       }
+    }
+
+  /** Lookup for the given string from both sides. */
+  def lookupFor(string: String): Boolean =
+    nonEmpty && {
+      Debug.debug(s"lookupFor: $string\n   $this")
+      val i1 = value.indexOf(string, from)
+      val i2 = value.lastIndexOf(string, to - 1)
+      min =
+        if (i1 >= 0) i1
+        else Int.MaxValue
+      max =
+        if (i2 >= 0 && i2 + string.length <= to) i2 + string.length
+        else Int.MinValue
+      Debug.debug(hasContour, s"=> $this")
+      hasContour
     }
 
   /** Lookup from the left side while check succeeds. */
@@ -107,6 +137,24 @@ final case class Zoom(value: String) {
         true
       }
     }
+
+  def lookupWhile(check: Char => Boolean, maxSteps: Int = 0): Boolean = {
+    Debug.debug(s"lookupWhile:\n   $this")
+    var i1 = from
+    var stop1 = i1 >= to || check(value(i1))
+    while (!stop1)
+      stop1 = { i1 = i1 + 1; i1 >= to } || check(value(i1))
+    var i2 = to
+    var stop2 = i2 <= from || check(value(i2 - 1))
+    while (!stop2)
+      stop2 = { i2 = i2 - 1; i2 <= from } || check(value(i2 - 1))
+
+    min = Math.min(min, i1)
+    max = Math.max(max, i2)
+    val r = hasContour && contourLength >= maxSteps
+    Debug.debug(r, s"=> $this")
+    r
+  }
 
   /** Lookup from the left side until check succeeds. */
   def lookupRightUntil(check: Char => Boolean, minSteps: Int = 0, maxSteps: Int = Int.MaxValue): Boolean =
@@ -158,6 +206,27 @@ final case class Zoom(value: String) {
       }
     }
 
+  def lookupWhileNot(check: Char => Boolean, minSteps: Int = Int.MaxValue, maxSteps: Int = 0): Boolean = {
+    Debug.debug(s"lookupUntil:\n   $this")
+    var i1 = from
+    var stop1 = i1 >= to || !check(value(i1))
+    while (!stop1)
+      stop1 = { i1 = i1 + 1; i1 >= to } || !check(value(i1))
+    var i2 = to
+    var stop2 = i2 <= from || !check(value(i2 - 1))
+    while (!stop2)
+      stop2 = { i2 = i2 - 1; i2 <= from } || !check(value(i2 - 1))
+
+    min = Math.min(min, i1)
+    max = Math.max(max, i2)
+    val r = hasContour && {
+      val l = contourLength
+      l >= maxSteps && l <= minSteps
+    }
+    Debug.debug(r, s"=> $this")
+    r
+  }
+
   /** Expand contour from the left side. */
   def takeAllFromLeft(): Boolean = {
     Debug.debug(s"takeAllFromLeft:\n   $this")
@@ -180,6 +249,14 @@ final case class Zoom(value: String) {
     true
   }
 
+  def takeAll(): Boolean = {
+    Debug.debug(s"takeAll:\n   $this")
+    min = Math.min(min, from)
+    max = Math.max(max, to)
+    Debug.debug(hasContour, s"=> $this")
+    hasContour
+  }
+
   /** Change frame boundary on the left or the right side. */
   def resizeFrame(distance: Int, leftSide: Boolean): Unit =
     if (leftSide) {
@@ -192,9 +269,10 @@ final case class Zoom(value: String) {
     this.maxElseBottom <= other.minElseTop || other.maxElseBottom <= this.minElseTop
 
   /** Move this frame on the left or the right side of the other Zoom's contour. */
-  def flipFrame(other: Zoom, leftSide: Boolean): Boolean =
-    noOverlapBetweenContours(other) && {
-      Debug.debug(s"flipFrame: ${if (leftSide) "left" else "right"}\n   $this\n&  $other")
+  def flipFrame(other: Zoom, leftSide: Boolean): Boolean = {
+    val r = noOverlapBetweenContours(other)
+    Debug.debug(r, s"flipFrame: ${if (leftSide) "left" else "right"}\n   $this\n&  $other")
+    r && {
       if (leftSide) {
         from = other.from
         to = Math.max(from, Math.min(this.to, this.min))
@@ -205,6 +283,7 @@ final case class Zoom(value: String) {
       Debug.debug(s"=> $this")
       true
     }
+  }
 
   def noGapBetweenContours(other: Zoom): Boolean =
     this.minElseBottom <= other.maxElseTop && this.maxElseTop >= other.minElseBottom
@@ -212,20 +291,49 @@ final case class Zoom(value: String) {
   /** Merge contours and frames. */
   def merge(other: Zoom): Boolean = {
     val r = noGapBetweenContours(other)
-    Debug.debug(s"merge:\n   $this\n&  $other")
+    Debug.debug(r, s"merge:\n   $this\n&  $other")
     from = Math.max(this.from, other.from)
     to = Math.min(this.to, other.to)
     min = Math.min(this.min, other.min)
     max = Math.max(this.max, other.max)
-    Debug.debug(s"=> $this")
+    Debug.debug(r, s"=> $this")
     r
   }
 
-  /** Calculate next frame and reset contour. */
-  def closeUpFrameAndResetContour(prevFrom: Int, prevTo: Int, maxTo: Int, minWidth: Int): Boolean = {
-    Debug.debug(s"closeUpFrameAndResetContour:$maxTo\n   $this")
-    from = Math.min(prevFrom, min)
-    to = Math.max(prevTo, max)
+  /** Intersect contours. */
+  def intersectContour(other: Zoom): Boolean = {
+    if (hasContour && other.hasContour) {
+      min = Math.max(this.min, other.min)
+      max = Math.min(this.max, other.max)
+    } else {
+      resetContour
+    }
+    hasContour
+  }
+
+  /** Union contours. */
+  def unionContour(other: Zoom): Boolean = {
+    if (hasContour && other.hasContour) {
+      min = Math.min(this.min, other.min)
+      max = Math.max(this.max, other.max)
+    } else {
+      resetContour
+    }
+    hasContour
+  }
+
+  def closeUpFrameAndResetContour: Boolean =
+    (hasContour && {
+      from = min
+      to = max
+      true
+    }) & {
+      resetContour
+      true
+    }
+
+  def squeezeRightOrLeft(offset: Int, minWidth: Int, maxTo: Int): Boolean = {
+    Debug.debug(s"squeezeRightOrLeft $offset $minWidth $maxTo\n   $this")
     to = to - 1
     if ((isEmpty || frameWidth < minWidth) && to < maxTo) {
       from = from + 1
@@ -233,8 +341,9 @@ final case class Zoom(value: String) {
     }
     min = Int.MaxValue
     max = Int.MinValue
-    Debug.debug(s"=> $this")
-    nonEmpty && frameWidth >= minWidth
+    val r = nonEmpty && frameWidth >= minWidth
+    Debug.debug(r, s"=> $this")
+    r
   }
 
   /** Copy frame and reset contour. */
@@ -247,7 +356,7 @@ final case class Zoom(value: String) {
   }
 
   /** Exact copy of this Zoom. */
-  def exactCopy: Zoom = {
+  def copy: Zoom = {
     val z = Zoom(value)
     z.from = this.from
     z.to = this.to
@@ -256,13 +365,38 @@ final case class Zoom(value: String) {
     z
   }
 
+  final def prettyPrint: String = {
+    import scala.io.AnsiColor._
+    val sb = new StringBuilder()
+    var i = 0
+    while (i < value.length()) {
+      if (i >= from && i < to) sb.append(BLUE) else sb.append(CYAN)
+      if (i >= min && i < max) sb.append(WHITE_B + BOLD)
+      sb.append(value(i))
+      sb.append(RESET)
+      i = i + 1
+    }
+    sb.toString()
+  }
+
   override def toString(): String =
-    s"from=$from to=$to min=${if (min != Int.MaxValue) min.toString else "_"} max=${if (max != Int.MinValue) max.toString
-    else "_"} value=${value.substring(from, to)}"
+    s"$prettyPrint from=$from to=$to min=${if (min != Int.MaxValue) min.toString else "_"} max=${if (max != Int.MinValue) max.toString
+    else "_"}"
 
 }
 
 object Zoom {
+
+  def apply(value: String): Zoom =
+    new Zoom(value)
+
+  def apply(value: String, from: Int, to: Int): Zoom = {
+    val z = Zoom(value)
+    z.from = from
+    z.to = to
+    z
+  }
+
   def apply(value: String, from: Int, to: Int, min: Int, max: Int): Zoom = {
     val z = Zoom(value)
     z.from = from
@@ -271,12 +405,4 @@ object Zoom {
     z.max = max
     z
   }
-}
-
-object Debug {
-
-  var isDebug: Boolean = false
-
-  def debug(msg: => String): Unit =
-    if (isDebug) println(msg) else ()
 }

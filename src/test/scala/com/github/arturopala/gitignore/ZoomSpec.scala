@@ -25,6 +25,12 @@ class ZoomSpec extends AnyWordSpecCompat {
       Zoom("abc").frame === (0, 3)
     }
 
+    "have contourLength and frameWidth" in {
+      val z1 = Zoom("abcdefghijk", 0, 6, 6, 10)
+      z1.frameWidth === 6
+      z1.contourLength === 4
+    }
+
     "lookup string from the left side, and adjust focus and contour" in {
       val z = Zoom("abcdef")
       z.frame === (0, 6)
@@ -420,6 +426,198 @@ class ZoomSpec extends AnyWordSpecCompat {
       z1.frame === (0, 0)
       z1.hasContour
       z1.contour === (0, 1)
+    }
+
+    "lookup for" in {
+      val z1 = Zoom("ab")
+      z1.lookupFor("a") === true
+      z1.start === 0
+      z1.end === 1
+      z1.lookupFor("b") === true
+      z1.start === 1
+      z1.end === 2
+      z1.lookupFor("c") === false
+      z1.start === Int.MaxValue
+      z1.end === Int.MinValue
+    }
+
+    "lookup while" in {
+      val z1 = Zoom("ab")
+      z1.lookupWhile(_ == 'a') === true
+      z1.start === 0
+      z1.end === 1
+
+      val z2 = Zoom("aaa")
+      z2.lookupWhile(_ == 'a') === true
+      z2.start === 0
+      z2.end === 3
+
+      val z3 = Zoom("bcd")
+      z3.lookupWhile(_ == 'a') === false
+
+      val z4 = Zoom("")
+      z4.lookupWhile(_ == 'a') === true
+      z4.start === 0
+      z4.end === 0
+
+      val z5 = Zoom("")
+      z5.lookupWhile(_ == 'a', maxSteps = 1) === false
+
+      val z6 = Zoom("ab")
+      z6.lookupWhile(_ == 'a', maxSteps = 2) === false
+    }
+
+    "lookup while not" in {
+      val z1 = Zoom("ab")
+      z1.lookupWhile(_ != 'a') === true
+      z1.start === 1
+      z1.end === 2
+
+      val z2 = Zoom("aaa")
+      z2.lookupWhile(_ != 'a') === false
+
+      val z3 = Zoom("bcd")
+      z3.lookupWhile(_ != 'a') === true
+      z3.start === 0
+      z3.end === 3
+
+      val z4 = Zoom("")
+      z4.lookupWhile(_ != 'a') === true
+      z4.start === 0
+      z4.end === 0
+
+      val z5 = Zoom("")
+      z5.lookupWhile(_ != 'a', maxSteps = 1) === false
+
+      val z6 = Zoom("ab")
+      z6.lookupWhile(_ != 'a', maxSteps = 2) === false
+    }
+
+    "lookup while not positive condition" in {
+      val z1 = Zoom("ab")
+      z1.lookupWhileNot(_ == 'a') === true
+      z1.start === 1
+      z1.end === 2
+
+      val z2 = Zoom("aaa")
+      z2.lookupWhileNot(_ == 'a') === false
+
+      val z3 = Zoom("bcd")
+      z3.lookupWhileNot(_ == 'a') === true
+      z3.start === 0
+      z3.end === 3
+
+      val z4 = Zoom("")
+      z4.lookupWhileNot(_ == 'a') === true
+      z4.start === 0
+      z4.end === 0
+
+      val z5 = Zoom("")
+      z5.lookupWhileNot(_ == 'a', maxSteps = 1) === false
+
+      val z6 = Zoom("ab")
+      z6.lookupWhileNot(_ == 'a', maxSteps = 2) === false
+
+      val z7 = Zoom("a")
+      z7.lookupWhileNot(_ == 'a') === false
+    }
+
+    "lookup while not negative condition" in {
+      val z1 = Zoom("ab")
+      z1.lookupWhileNot(_ != 'a') === true
+      z1.start === 0
+      z1.end === 1
+
+      val z2 = Zoom("aaa")
+      z2.lookupWhileNot(_ != 'a') === true
+      z2.start === 0
+      z2.end === 3
+
+      val z3 = Zoom("bcd")
+      z3.lookupWhileNot(_ != 'a') === false
+
+      val z4 = Zoom("")
+      z4.lookupWhileNot(_ != 'a') === true
+      z4.start === 0
+      z4.end === 0
+
+      val z5 = Zoom("")
+      z5.lookupWhileNot(_ != 'a', maxSteps = 1) === false
+
+      val z6 = Zoom("ab")
+      z6.lookupWhileNot(_ != 'a', maxSteps = 2) === false
+
+      val z7 = Zoom("a")
+      z7.lookupWhileNot(_ != 'a') === true
+      z7.start === 0
+      z7.end === 1
+    }
+
+    "intersect contour" in {
+      val z1 = Zoom("abc")
+      z1.lookupFor("a") === true
+      z1.start === 0
+      z1.end === 1
+      val z2 = Zoom("abc")
+      z2.lookupFor("c") === true
+      z2.start === 2
+      z2.end === 3
+      z1.intersectContour(z2) === false
+      val z3 = Zoom("abc")
+      z1.intersectContour(z3) === false
+      z1.hasContour === false
+    }
+
+    "union contour" in {
+      val z1 = Zoom("abc")
+      z1.lookupFor("a") === true
+      z1.start === 0
+      z1.end === 1
+      z1.frame === (0, 3)
+      val z2 = Zoom("abc")
+      z2.lookupFor("c") === true
+      z2.start === 2
+      z2.end === 3
+      z2.frame === (0, 3)
+      z1.unionContour(z2) === true
+      z1.start === 0
+      z1.end === 3
+      z1.frame === (0, 3)
+      val z3 = Zoom("abc")
+      z1.unionContour(z3) === false
+      z1.hasContour === false
+    }
+
+    "close up frame and reset contour" in {
+      val z1 = Zoom("abc", 0, 3, 1, 2)
+      z1.frame === (0, 3)
+      z1.hasContour === true
+      z1.closeUpFrameAndResetContour === true
+      z1.frame === (1, 2)
+      z1.hasContour === false
+      z1.closeUpFrameAndResetContour === false
+      z1.frame === (1, 2)
+      z1.hasContour === false
+    }
+
+    "squeeze right or left" in {
+      val z1 = Zoom("abc", 0, 3, 1, 2)
+      z1.squeezeRightOrLeft(1, 1, 3) === true
+      z1.frame === (0, 2)
+      z1.hasContour === false
+      z1.squeezeRightOrLeft(1, 1, 3) === true
+      z1.frame === (0, 1)
+      z1.hasContour === false
+      z1.squeezeRightOrLeft(1, 1, 3) === true
+      z1.frame === (1, 3)
+      z1.hasContour === false
+      z1.squeezeRightOrLeft(1, 1, 3) === true
+      z1.frame === (1, 2)
+      z1.hasContour === false
+      z1.squeezeRightOrLeft(1, 1, 3) === true
+      z1.frame === (2, 3)
+      z1.hasContour === false
+      z1.squeezeRightOrLeft(1, 1, 3) === false
     }
 
   }

@@ -20,6 +20,37 @@ class GlobSpec extends AnyWordSpecCompat {
 
   Debug.isDebug = false
 
+  "Glob.Matcher" should {
+    "compute match contour" in {
+      val z1 = Zoom("abbc")
+      Glob.Matcher.computeContour(z1, Glob.compile("b")) === true
+      z1.contour === (1, 3)
+      Glob.Matcher.computeContour(z1, Glob.compile("a")) === true
+      z1.contour === (0, 1)
+      Glob.Matcher.computeContour(z1, Glob.compile("c")) === true
+      z1.contour === (3, 4)
+      Glob.Matcher.computeContour(z1, Glob.compile("d")) === false
+      z1.hasContour === false
+      Glob.Matcher.computeContour(z1, Glob.compile("?")) === true
+      z1.contour === (0, 4)
+      Glob.Matcher.computeContour(z1, Glob.compile("*")) === true
+      z1.contour === (0, 4)
+      Glob.Matcher.computeContour(z1, Glob.compile("**")) === true
+      z1.contour === (0, 4)
+      Glob.Matcher.computeContour(z1, Glob.compile("*b*")) === true
+      z1.contour === (0, 4)
+      Glob.Matcher.computeContour(z1, Glob.compile("*??*")) === true
+      z1.contour === (0, 4)
+      Glob.Matcher.computeContour(z1, Glob.compile("*?b*")) === true
+      z1.contour === (0, 4)
+      Glob.Matcher.computeContour(z1, Glob.compile("*?c")) === true
+      z1.contour === (0, 4)
+      Glob.Matcher.computeContour(z1, Glob.compile("*?d")) === false
+      Glob.Matcher.computeContour(z1, Glob.compile("d")) === false
+      Glob.Matcher.computeContour(z1, Glob.compile("?????")) === false
+    }
+  }
+
   "Glob" should {
     "check if pattern has wildcards" in {
       Glob.isWildcardPattern("a") === false
@@ -136,8 +167,6 @@ class GlobSpec extends AnyWordSpecCompat {
 
       val m3 = Glob.compile("?").matcher("")
       m3.find === false
-      m3.start === -1
-      m3.end === -1
 
       val p1 = Glob.compile("?")
       p1.matcher("b").find === true
