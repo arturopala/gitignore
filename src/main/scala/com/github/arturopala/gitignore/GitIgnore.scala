@@ -219,9 +219,6 @@ object GitIgnore {
   /** Re-usable matcher instance. */
   object Matcher {
     def apply(gitPattern: String): Matcher =
-      // if (RegexpMatcher.isRegexpPattern(gitPattern))
-      //   RegexpMatcher(gitPattern)
-      // else
       if (Glob.isWildcardPattern(gitPattern))
         GlobMatcher(gitPattern)
       else
@@ -238,27 +235,6 @@ object GitIgnore {
 
     final override def isSuffixOf(path: String): Int =
       if (path.endsWith(gitPattern)) path.length else NONE
-  }
-
-  /** Matches path using Git pattern compiled into Java regular expression. */
-  final case class RegexpMatcher(gitPattern: String) extends Matcher {
-    final lazy val pattern =
-      RegexpMatcher.compile(gitPattern)
-
-    final override def isPartOf(path: String): Int = {
-      val m = pattern.matcher(path)
-      if (m.find()) m.end() else NONE
-    }
-
-    final override def isPrefixOf(path: String): Int = {
-      val m = pattern.matcher(path)
-      if (m.find() && m.start() == 0) m.end() else NONE
-    }
-
-    final override def isSuffixOf(path: String): Int = {
-      val m = pattern.matcher(path)
-      if (m.find() && m.end() == path.length) m.end() else NONE
-    }
   }
 
   /** Matches path using a Git pattern compiled as a [[Glob.Pattern]]. */
@@ -285,49 +261,6 @@ object GitIgnore {
       val r = if (m.find() && m.end() == path.length) m.end() else NONE
       Debug.debug(s"$gitPattern isSuffixOf $path = $r")
       r
-    }
-  }
-
-  object RegexpMatcher {
-
-    /** Regular expression detecting if Git pattern needs regexp matcher. */
-    final val gitPatternRegexp: java.util.regex.Pattern =
-      java.util.regex.Pattern.compile("""(?<!\\)(\*\*|\*|\?|\[[\p{Graph}]+\])""")
-
-    /** Check if Git pattern needs regexp matcher. */
-    final def isRegexpPattern(pattern: String): Boolean =
-      gitPatternRegexp.matcher(pattern).find()
-
-    /** Compiles .gitignore pattern into Java regular expression.
-      *
-      * See: https://www.man7.org/linux/man-pages/man7/glob.7.html
-      */
-    final def compile(gitPattern: String): java.util.regex.Pattern = {
-      val matcher = gitPatternRegexp.matcher(gitPattern)
-      val buffer = new StringBuffer()
-      var z = 0
-      while (matcher.find()) {
-        val s = matcher.start()
-        val e = matcher.end()
-        val m = gitPattern.substring(s, e)
-        if (s > z)
-          buffer
-            .append(java.util.regex.Pattern.quote(unescape(gitPattern.substring(z, s))))
-        buffer.append(m match {
-          case "*"  => """[^/]*?"""
-          case "**" => """\p{Graph}*"""
-          case "?"  => "[^/]"
-          case s if s.startsWith("[") && s.endsWith("]") =>
-            s.replaceAllLiterally("[!", "[^")
-          case _ => m
-        })
-        z = e
-      }
-      if (z < gitPattern.length())
-        buffer
-          .append(java.util.regex.Pattern.quote(unescape(gitPattern.substring(z, gitPattern.length()))))
-
-      java.util.regex.Pattern.compile(buffer.toString)
     }
   }
 
