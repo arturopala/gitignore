@@ -21,7 +21,4 @@ import java.nio.file.Paths
 class DebugSpec extends AnyWordSpecCompat {
   Debug.isDebug = true
 
-  val path = Paths.get("project", "target")
-  GitIgnore("*arget").isIgnored(path, true) shouldBe true
-
 }

@@ -26,8 +26,8 @@ final class Zoom(value: String) {
   private var min: Int = Int.MaxValue
   private var max: Int = Int.MinValue
 
-  def start: Int = min
-  def end: Int = max
+  def start(): Int = min
+  def end(): Int = max
   def frame: (Int, Int) = (from, to)
   def left: Int = from
   def right: Int = to

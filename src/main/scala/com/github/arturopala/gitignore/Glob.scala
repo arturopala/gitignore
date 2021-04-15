@@ -315,8 +315,8 @@ object Glob {
           continue = !result && computeNextFrame(zoom.setFrame(prevFrom, prevTo), pattern, maxTo)
         }
       }
-      Debug.debug(result, s"${if (result) "Found" else "Not found"} at (${zoom.start},${zoom.end})")
-      (result, zoom.start, zoom.end)
+      Debug.debug(result, s"${if (result) "Found" else "Not found"} at (${zoom.start()},${zoom.end()})")
+      (result, zoom.start(), zoom.end())
     }
 
     final def computeNextFrame(zoom: Zoom, pattern: Pattern, maxTo: Int): Boolean = {

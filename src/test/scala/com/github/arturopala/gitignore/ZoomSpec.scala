@@ -431,34 +431,34 @@ class ZoomSpec extends AnyWordSpecCompat {
     "lookup for" in {
       val z1 = Zoom("ab")
       z1.lookupFor("a") === true
-      z1.start === 0
-      z1.end === 1
+      z1.start() === 0
+      z1.end() === 1
       z1.lookupFor("b") === true
-      z1.start === 1
-      z1.end === 2
+      z1.start() === 1
+      z1.end() === 2
       z1.lookupFor("c") === false
-      z1.start === Int.MaxValue
-      z1.end === Int.MinValue
+      z1.start() === Int.MaxValue
+      z1.end() === Int.MinValue
     }
 
     "lookup while" in {
       val z1 = Zoom("ab")
       z1.lookupWhile(_ == 'a') === true
-      z1.start === 0
-      z1.end === 1
+      z1.start() === 0
+      z1.end() === 1
 
       val z2 = Zoom("aaa")
       z2.lookupWhile(_ == 'a') === true
-      z2.start === 0
-      z2.end === 3
+      z2.start() === 0
+      z2.end() === 3
 
       val z3 = Zoom("bcd")
       z3.lookupWhile(_ == 'a') === false
 
       val z4 = Zoom("")
       z4.lookupWhile(_ == 'a') === true
-      z4.start === 0
-      z4.end === 0
+      z4.start() === 0
+      z4.end() === 0
 
       val z5 = Zoom("")
       z5.lookupWhile(_ == 'a', maxSteps = 1) === false
@@ -470,21 +470,21 @@ class ZoomSpec extends AnyWordSpecCompat {
     "lookup while not" in {
       val z1 = Zoom("ab")
       z1.lookupWhile(_ != 'a') === true
-      z1.start === 1
-      z1.end === 2
+      z1.start() === 1
+      z1.end() === 2
 
       val z2 = Zoom("aaa")
       z2.lookupWhile(_ != 'a') === false
 
       val z3 = Zoom("bcd")
       z3.lookupWhile(_ != 'a') === true
-      z3.start === 0
-      z3.end === 3
+      z3.start() === 0
+      z3.end() === 3
 
       val z4 = Zoom("")
       z4.lookupWhile(_ != 'a') === true
-      z4.start === 0
-      z4.end === 0
+      z4.start() === 0
+      z4.end() === 0
 
       val z5 = Zoom("")
       z5.lookupWhile(_ != 'a', maxSteps = 1) === false
@@ -496,21 +496,21 @@ class ZoomSpec extends AnyWordSpecCompat {
     "lookup while not positive condition" in {
       val z1 = Zoom("ab")
       z1.lookupWhileNot(_ == 'a') === true
-      z1.start === 1
-      z1.end === 2
+      z1.start() === 1
+      z1.end() === 2
 
       val z2 = Zoom("aaa")
       z2.lookupWhileNot(_ == 'a') === false
 
       val z3 = Zoom("bcd")
       z3.lookupWhileNot(_ == 'a') === true
-      z3.start === 0
-      z3.end === 3
+      z3.start() === 0
+      z3.end() === 3
 
       val z4 = Zoom("")
       z4.lookupWhileNot(_ == 'a') === true
-      z4.start === 0
-      z4.end === 0
+      z4.start() === 0
+      z4.end() === 0
 
       val z5 = Zoom("")
       z5.lookupWhileNot(_ == 'a', maxSteps = 1) === false
@@ -525,21 +525,21 @@ class ZoomSpec extends AnyWordSpecCompat {
     "lookup while not negative condition" in {
       val z1 = Zoom("ab")
       z1.lookupWhileNot(_ != 'a') === true
-      z1.start === 0
-      z1.end === 1
+      z1.start() === 0
+      z1.end() === 1
 
       val z2 = Zoom("aaa")
       z2.lookupWhileNot(_ != 'a') === true
-      z2.start === 0
-      z2.end === 3
+      z2.start() === 0
+      z2.end() === 3
 
       val z3 = Zoom("bcd")
       z3.lookupWhileNot(_ != 'a') === false
 
       val z4 = Zoom("")
       z4.lookupWhileNot(_ != 'a') === true
-      z4.start === 0
-      z4.end === 0
+      z4.start() === 0
+      z4.end() === 0
 
       val z5 = Zoom("")
       z5.lookupWhileNot(_ != 'a', maxSteps = 1) === false
@@ -549,19 +549,19 @@ class ZoomSpec extends AnyWordSpecCompat {
 
       val z7 = Zoom("a")
       z7.lookupWhileNot(_ != 'a') === true
-      z7.start === 0
-      z7.end === 1
+      z7.start() === 0
+      z7.end() === 1
     }
 
     "intersect contour" in {
       val z1 = Zoom("abc")
       z1.lookupFor("a") === true
-      z1.start === 0
-      z1.end === 1
+      z1.start() === 0
+      z1.end() === 1
       val z2 = Zoom("abc")
       z2.lookupFor("c") === true
-      z2.start === 2
-      z2.end === 3
+      z2.start() === 2
+      z2.end() === 3
       z1.intersectContour(z2) === false
       val z3 = Zoom("abc")
       z1.intersectContour(z3) === false
@@ -571,17 +571,17 @@ class ZoomSpec extends AnyWordSpecCompat {
     "union contour" in {
       val z1 = Zoom("abc")
       z1.lookupFor("a") === true
-      z1.start === 0
-      z1.end === 1
+      z1.start() === 0
+      z1.end() === 1
       z1.frame === (0, 3)
       val z2 = Zoom("abc")
       z2.lookupFor("c") === true
-      z2.start === 2
-      z2.end === 3
+      z2.start() === 2
+      z2.end() === 3
       z2.frame === (0, 3)
       z1.unionContour(z2) === true
-      z1.start === 0
-      z1.end === 3
+      z1.start() === 0
+      z1.end() === 3
       z1.frame === (0, 3)
       val z3 = Zoom("abc")
       z1.unionContour(z3) === false

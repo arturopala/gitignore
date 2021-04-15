@@ -247,17 +247,17 @@ object GitIgnore {
 
     final override def isPartOf(path: String): Int = {
       val m = pattern.matcher(path)
-      if (m.find()) m.end else NONE
+      if (m.find()) m.end() else NONE
     }
 
     final override def isPrefixOf(path: String): Int = {
       val m = pattern.matcher(path)
-      if (m.find() && m.start() == 0) m.end else NONE
+      if (m.find() && m.start() == 0) m.end() else NONE
     }
 
     final override def isSuffixOf(path: String): Int = {
       val m = pattern.matcher(path)
-      if (m.find() && m.end() == path.length) m.end else NONE
+      if (m.find() && m.end() == path.length) m.end() else NONE
     }
   }
 
@@ -268,21 +268,21 @@ object GitIgnore {
 
     final override def isPartOf(path: String): Int = {
       val m = pattern.matcher(path)
-      val r = if (m.find()) m.end else NONE
+      val r = if (m.find()) m.end() else NONE
       Debug.debug(s"$gitPattern isPartOf $path = $r")
       r
     }
 
     final override def isPrefixOf(path: String): Int = {
       val m = pattern.matcher(path)
-      val r = if (m.find() && m.start() == 0) m.end else NONE
+      val r = if (m.find() && m.start() == 0) m.end() else NONE
       Debug.debug(s"$gitPattern isPrefixOf $path = $r")
       r
     }
 
     final override def isSuffixOf(path: String): Int = {
       val m = pattern.matcher(path)
-      val r = if (m.find() && m.end() == path.length) m.end else NONE
+      val r = if (m.find() && m.end() == path.length) m.end() else NONE
       Debug.debug(s"$gitPattern isSuffixOf $path = $r")
       r
     }
