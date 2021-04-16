@@ -20,6 +20,8 @@ import java.nio.file.Paths
 
 class GitIgnoreSpec extends AnyWordSpecCompat {
 
+  Debug.isDebug = false
+
   val gitIgnore1 = GitIgnore(Seq(".git", "build.sbt", "target", ".scalafmt.conf"))
   val gitIgnore2 = GitIgnore(Seq(".git/", "build.sbt/", "target/", ".scalafmt.conf/"))
   val gitIgnore3 = GitIgnore(Seq("/.git", "/build.sbt", "/target", "/.scalafmt.conf"))

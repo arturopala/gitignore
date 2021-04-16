@@ -165,8 +165,9 @@ object Glob {
   }
 
   /** A type of pattern matching single character only. */
-  sealed trait SingleCharacterPattern extends Pattern with WildcardPattern with CharacterCheck {
+  sealed trait SingleCharacterPattern extends Pattern with WildcardPattern {
     override val minWidth: Int = 1
+    def matches(c: Char): Boolean
   }
 
   /** A pattern consisting of a sequence of nested patterns. */
@@ -193,14 +194,14 @@ object Glob {
 
   /** A wildcard pattern matching any single character except path separator '/' character. */
   final object AnySingleCharacterPattern extends Pattern with SingleCharacterPattern {
-    override def check(c: Char): Boolean = c != '/'
+    override def matches(c: Char): Boolean = c != '/'
     override val toPatternString: String = "?"
   }
 
   /** A wildcard pattern matching either class or range of characters. */
   final case class BracketPattern(pattern: String) extends Pattern with SingleCharacterPattern {
-    private val characterCheck = CharacterCheck.compile(pattern)
-    override def check(c: Char): Boolean = characterCheck.check(c)
+    val characterCheck: CharacterCheck = CharacterCheck.compile(pattern)
+    override def matches(c: Char): Boolean = characterCheck.check(c)
     override def toPatternString: String = pattern
   }
 
@@ -210,22 +211,16 @@ object Glob {
     /** Compile expression between the brackets into a [[CharacterCheck]]. */
     def compile(pattern: String): CharacterCheck =
       if (pattern.isEmpty()) throw new Exception("A character check pattern cannot be empty.")
-      else if (pattern.head == '!') new CharacterCheck {
-        val checks = compileInternal(pattern.drop(1))
-        override def check(c: Char): Boolean =
-          c != '/' && !checks.foldLeft(false)((a, ck) => a || ck.check(c))
-      }
-      else
+      else if (pattern.head == '!') {
+        val checks = CharacterCheck.compileInternal(pattern.drop(1))
+        NegatedCompositeCharacterCheck(checks)
+      } else
         compileInternal(pattern) match {
           case ch :: Nil => ch
-          case checks =>
-            new CharacterCheck {
-              override def check(c: Char): Boolean =
-                c != '/' && checks.foldLeft(false)((a, ck) => a || ck.check(c))
-            }
+          case checks    => CompositeCharacterCheck(checks)
         }
 
-    private def compileInternal(pattern: String): List[CharacterCheck] = {
+    def compileInternal(pattern: String): List[CharacterCheck] = {
       val (list, remaining, _) = pattern
         .foldLeft((List.empty[CharacterCheck], "", false)) { case ((ls, acc, isRange), c) =>
           if (c == '/')
@@ -234,18 +229,30 @@ object Glob {
             )
           else if (c == '-' && acc.nonEmpty)
             (
-              if (acc.length() > 1) new CharacterClassCheck(acc.dropRight(1)) :: ls else ls,
+              if (acc.length() > 1) CharacterClassCheck(acc.dropRight(1)) :: ls else ls,
               acc.takeRight(1) + '-',
               true
             )
           else if (isRange)
-            (new CharacterRangeCheck(acc.head, c) :: ls, "", false)
+            (CharacterRangeCheck(acc.head, c) :: ls, "", false)
           else
             (ls, acc + c, false)
         }
-      if (remaining.nonEmpty) new CharacterClassCheck(remaining) :: list
+      if (remaining.nonEmpty) CharacterClassCheck(remaining) :: list
       else list
     }
+  }
+
+  /** Composite check nesting a sequence of positive checks. */
+  final case class CompositeCharacterCheck(checks: List[CharacterCheck]) extends CharacterCheck {
+    override def check(c: Char): Boolean =
+      c != '/' && checks.foldLeft(false)((a, ck) => a || ck.check(c))
+  }
+
+  /** Composite check nesting a sequence of negative checks. */
+  final case class NegatedCompositeCharacterCheck(checks: List[CharacterCheck]) extends CharacterCheck {
+    override def check(c: Char): Boolean =
+      c != '/' && !checks.foldLeft(false)((a, ck) => a || ck.check(c))
   }
 
   /** Checks if the character is of any of the provided characters.
@@ -356,7 +363,7 @@ object Glob {
         case LiteralPattern(literal) =>
           zoom.lookupFor(literal)
         case p: SingleCharacterPattern =>
-          zoom.lookupWhile(p.check, maxSteps = 1)
+          zoom.lookupWhile(p.matches, maxSteps = 1)
         case AnyStringPattern =>
           zoom.takeAll()
         case AnythingPattern =>
@@ -380,8 +387,8 @@ object Glob {
           else zoom.lookupLeftFor(literal, if (adjacent) 0 else Int.MaxValue)
 
         case p: SingleCharacterPattern =>
-          if (leftToRight) zoom.lookupRightWhile(p.check, 1)
-          else zoom.lookupLeftWhile(p.check, 1)
+          if (leftToRight) zoom.lookupRightWhile(p.matches, 1)
+          else zoom.lookupLeftWhile(p.matches, 1)
 
         case AnyStringPattern =>
           if (leftToRight) zoom.lookupRightUntil(_ == '/', minSteps = 0)

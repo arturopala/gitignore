@@ -18,6 +18,8 @@ package com.github.arturopala.gitignore
 
 class ZoomSpec extends AnyWordSpecCompat {
 
+  Debug.isDebug = false
+
   "Zoom" should {
     "wrap the string and report initial focus details" in {
       Zoom("").frame === (0, 0)

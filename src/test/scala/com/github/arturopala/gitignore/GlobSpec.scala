@@ -88,6 +88,7 @@ class GlobSpec extends AnyWordSpecCompat {
       Glob.compile("\\*") === Glob.LiteralPattern("*")
       Glob.compile("**") === Glob.AnythingPattern
       Glob.compile("[]") === Glob.LiteralPattern("[]")
+      Glob.compile("[a]") === Glob.BracketPattern("a")
       Glob.compile("[abc]") === Glob.BracketPattern("abc")
       Glob.compile("[a-z]") === Glob.BracketPattern("a-z")
       Glob.compile("[!a-z]") === Glob.BracketPattern("!a-z")
@@ -628,9 +629,11 @@ class GlobSpec extends AnyWordSpecCompat {
       Glob.compile("[]-]").matcher("[").find() === false
       Glob.compile("[][-]").matcher("[").find() === true
       Glob.compile("[a]").matcher("a").find() === true
+      Glob.compile("[a]").matcher("bac").find() === true
       Glob.compile("[a-z]").matcher("a").find() === true
       Glob.compile("[a-zA-Z]").matcher("a").find() === true
       Glob.compile("[!b]").matcher("a").find() === true
+      Glob.compile("[!b]").matcher("abcdef").find() === true
       Glob.compile("[!b-z]").matcher("a").find() === true
       Glob.compile("[!b-zA-Z]").matcher("a").find() === true
       Glob.compile("[b]").matcher("a").find() === false

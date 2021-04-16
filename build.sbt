@@ -46,13 +46,15 @@ lazy val sharedSettings = Seq(
   scalacOptions in (Compile, doc) += "-groups",
   scalacOptions += "-Ywarn-unused", // required by `RemoveUnused` rule
   parallelExecution in Test := false,
-  libraryDependencies += "org.scalameta" %%% "munit" % mUnitVersion % Test,
+  libraryDependencies ++= Seq(
+    "org.scalameta" %%% "munit"            % mUnitVersion % Test,
+    "org.scalameta" %%% "munit-scalacheck" % mUnitVersion % Test
+  ),
   headerLicense := Some(HeaderLicense.ALv2("2020", "Artur Opala"))
 )
 
 skip in publish := true
 crossScalaVersions := List()
-libraryDependencies += "org.scalameta" %%% "munit" % mUnitVersion % Test
 
 lazy val jVMSettings = List(
   crossScalaVersions := allScalaVersions,
