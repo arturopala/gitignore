@@ -1,11 +1,17 @@
+val githubRepoName = "gitignore"
+
+val developerName = "Artur Opala"
+val developerEmail = "opala.artur@gmail.com"
+val githubUserName = "arturopala"
+
 val scala213 = "2.13.4"
 val scala212 = "2.12.13"
 val scala211 = "2.11.12"
-val dottyNext = "3.0.0-RC2"
-val dottyStable = "3.0.0-RC1"
-val scalaJSVersion = "1.5.0"
+val dottyNext = "3.0.0-RC3"
+val dottyStable = "3.0.0-RC2"
+val scalaJSVersion = "1.5.1"
 val scalaNativeVersion = "0.4.0"
-val mUnitVersion = "0.7.23"
+val mUnitVersion = "0.7.25"
 
 val scala2Versions = List(scala213, scala212, scala211)
 val scala3Versions = List(dottyNext, dottyStable)
@@ -14,52 +20,53 @@ val allScalaVersions = scala2Versions ++ scala3Versions
 inThisBuild(
   List(
     scalaVersion := scala213,
-    organization := "com.github.arturopala",
-    homepage := Some(url("https://github.com/arturopala/gitignore")),
+    organization := s"com.github.$githubUserName",
+    homepage := Some(url(s"https://github.com/$githubUserName/$githubRepoName")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer(
-        "arturopala",
-        "Artur Opala",
-        "opalaarturgmailcom",
-        url("https://uk.linkedin.com/in/arturopala")
+        githubUserName,
+        developerName,
+        developerEmail,
+        url(s"https://uk.linkedin.com/in/$githubUserName")
       )
     ),
-    organizationName := "Artur Opala",
+    organizationName := developerName,
     startYear := Some(2020),
     licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.5.0",
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,
-    scalafixScalaBinaryVersion := "2.13"
+    scalafixScalaBinaryVersion := "2.13",
+    versionScheme := Some("early-semver")
   )
 )
 
 lazy val sharedSettings = Seq(
-  name := "gitignore",
+  name := githubRepoName,
   scalaVersion := scala213,
-  excludeFilter in (Compile, unmanagedResources) := NothingFilter,
-  scalafmtOnCompile in Compile := true,
-  scalafmtOnCompile in Test := true,
-  testFrameworks += new TestFramework("munit.Framework"),
+  Compile / excludeFilter := NothingFilter,
+  unmanagedResources / excludeFilter := NothingFilter,
+  (Compile / scalafmtOnCompile) := true,
+  (Test / scalafmtOnCompile) := true,
   logBuffered := false,
-  scalacOptions in (Compile, doc) += "-groups",
-  scalacOptions += "-Ywarn-unused", // required by `RemoveUnused` rule
-  parallelExecution in Test := false,
+  doc / scalacOptions += "-groups",
+  scalacOptions.withRank(KeyRanks.Invisible) += "-Ywarn-unused", // required by `RemoveUnused` rule
+  (Test / parallelExecution) := false,
+  headerLicense := Some(HeaderLicense.ALv2("2020", developerName)),
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit"            % mUnitVersion % Test,
     "org.scalameta" %%% "munit-scalacheck" % mUnitVersion % Test
-  ),
-  headerLicense := Some(HeaderLicense.ALv2("2020", "Artur Opala"))
+  )
 )
 
-skip in publish := true
+publish / skip := true
 crossScalaVersions := List()
 
 lazy val jVMSettings = List(
   crossScalaVersions := allScalaVersions,
-  gitHubPagesOrgName := "arturopala",
-  gitHubPagesRepoName := "gitignore",
+  gitHubPagesOrgName := githubUserName,
+  gitHubPagesRepoName := githubRepoName,
   gitHubPagesSiteDir := baseDirectory.value / "target" / "site"
 )
 
@@ -68,9 +75,9 @@ lazy val jSSettings = List(
   scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   libraryDependencies ++= List(
     ("org.scala-js" %% "scalajs-test-interface" % scalaJSVersion % Test)
-      .withDottyCompat(scalaVersion.value),
+      .cross(CrossVersion.for3Use2_13),
     ("org.scala-js" %% "scalajs-junit-test-runtime" % scalaJSVersion % Test)
-      .withDottyCompat(scalaVersion.value)
+      .cross(CrossVersion.for3Use2_13)
   )
 )
 
@@ -103,8 +110,8 @@ lazy val docs = project
   .dependsOn(rootJVM)
   .settings(
     sharedSettings,
-    mdocIn := baseDirectory.in(rootJVM).value / ".." / "src" / "docs",
-    mdocOut := baseDirectory.in(rootJVM).value / "..",
+    mdocIn := (rootJVM / baseDirectory).value / ".." / "src" / "docs",
+    mdocOut := (rootJVM / baseDirectory).value / "..",
     mdocVariables := Map(
       "VERSION"                  -> previousStableVersion.value.getOrElse("0.1.0"),
       "SCALA_NATIVE_VERSION"     -> scalaNativeVersion,
@@ -113,7 +120,7 @@ lazy val docs = project
       "DOTTY_STABLE_VERSION"     -> dottyStable,
       "SUPPORTED_SCALA_VERSIONS" -> allScalaVersions.map(v => s"`$v`").mkString(", ")
     ),
-    skip in publish := true
+    publish / skip := true
   )
   .enablePlugins(MdocPlugin)
 
