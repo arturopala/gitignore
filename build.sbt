@@ -38,8 +38,7 @@ inThisBuild(
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,
     scalafixScalaBinaryVersion := "2.13",
-    versionScheme := Some("early-semver"),
-    git.remoteRepo := s"git@github.com:$githubUserName/$githubRepoName.git"
+    versionScheme := Some("early-semver")
   )
 )
 
@@ -65,7 +64,10 @@ publish / skip := true
 crossScalaVersions := List()
 
 lazy val jVMSettings = List(
-  crossScalaVersions := allScalaVersions
+  crossScalaVersions := allScalaVersions,
+  gitHubPagesOrgName := githubUserName,
+  gitHubPagesRepoName := githubRepoName,
+  gitHubPagesSiteDir := baseDirectory.value / "target" / "site"
 )
 
 lazy val jSSettings = List(
@@ -96,7 +98,7 @@ lazy val root = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .jsSettings(jSSettings)
   .nativeSettings(nativeSettings)
   .jvmConfigure(
-    _.enablePlugins(AutomateHeaderPlugin, GhpagesPlugin, SiteScaladocPlugin)
+    _.enablePlugins(AutomateHeaderPlugin, GitHubPagesPlugin, SiteScaladocPlugin)
   )
 
 lazy val rootJVM = root.jvm
