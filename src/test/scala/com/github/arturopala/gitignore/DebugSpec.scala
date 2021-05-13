@@ -19,6 +19,7 @@ package com.github.arturopala.gitignore
 import java.nio.file.Paths
 
 class DebugSpec extends AnyWordSpecCompat {
-  Debug.isDebug = true
+
+  import scala.collection.JavaConverters._
 
 }

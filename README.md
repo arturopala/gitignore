@@ -14,9 +14,9 @@ and ScalaJS version `1.5.1`, and ScalaNative version `0.4.0`.
 Motivation
 ---
 
-The [.gitignore](https://git-scm.com/docs/gitignore) became de-facto standard filter format for project's files and folders. 
+The [.gitignore](https://git-scm.com/docs/gitignore) has became de-facto standard filter format for project's files and folders. 
 
-This nano-library provides Scala implementation of the `.gitignore` compliant filter, ready to embed in different tools without having to run `git` command.
+This nano-library provides Scala implementation of the `.gitignore` compliant filter, ready to embed in different tools without having to even run `git` command.
 
 Scaladoc
 ---

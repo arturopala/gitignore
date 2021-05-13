@@ -390,6 +390,12 @@ object Zoom {
   def apply(value: String): Zoom =
     new Zoom(value)
 
+  def apply(value: String, from: Int): Zoom = {
+    val z = Zoom(value)
+    z.from = from
+    z
+  }
+
   def apply(value: String, from: Int, to: Int): Zoom = {
     val z = Zoom(value)
     z.from = from

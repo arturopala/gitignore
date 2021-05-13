@@ -128,13 +128,13 @@ class GlobSpec extends AnyWordSpecCompat {
 
       val m6 = Glob.compile("abc").matcher("aabbcc")
       m6.find() === false
-      m6.start() === -1
-      m6.end() === -1
+      a[IllegalStateException] shouldBe thrownBy(m6.start())
+      a[IllegalStateException] shouldBe thrownBy(m6.end())
 
       val m7 = Glob.compile("abb").matcher("abc")
       m7.find() === false
-      m7.start() === -1
-      m7.end() === -1
+      a[IllegalStateException] shouldBe thrownBy(m7.start())
+      a[IllegalStateException] shouldBe thrownBy(m7.end())
 
       Glob.compile("abb").matcher("abb").find() === true
       Glob.compile("abb").matcher("abbb").find() === true
@@ -334,8 +334,8 @@ class GlobSpec extends AnyWordSpecCompat {
 
       val m3 = Glob.compile("c*").matcher("abab")
       m3.find() === false
-      m3.start() === -1
-      m3.end() === -1
+      a[IllegalStateException] shouldBe thrownBy(m3.start())
+      a[IllegalStateException] shouldBe thrownBy(m3.end())
 
       val m4 = Glob.compile("b*").matcher("abab")
       m4.find() === true

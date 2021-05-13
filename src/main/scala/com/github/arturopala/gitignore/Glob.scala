@@ -135,25 +135,25 @@ object Glob {
 
   }
 
-  /** Pattern abstraction. */
+  /** A compiled representation of a glob pattern. */
   sealed trait Pattern {
 
-    /*Create a single-use, mutable-state [[Matcher]].
-     * Wraps both the pattern and a string argument.
-     * Gives access to matching result and details.
-     */
+    /** Creates a matcher that will match the given input against this pattern. */
     final def matcher(value: String): Matcher =
       Matcher(value, this)
 
+    /** A minimum width of the string to be considered a match for this pattern. */
     def minWidth: Int
-    def toPatternString: String
+
+    /** Returns the regular expression from which this pattern was compiled. */
+    val pattern: String
 
   }
 
   /** Character check defined between brackets, either class or range. */
   sealed trait CharacterCheck {
 
-    /** Check is given character can be accepted. */
+    /** Check if given character can be accepted. */
     def check(c: Char): Boolean
   }
 
@@ -173,36 +173,34 @@ object Glob {
   /** A pattern consisting of a sequence of nested patterns. */
   final case class CompositePattern(patterns: List[Pattern]) extends Pattern {
     override val minWidth: Int = patterns.foldLeft(0)(_ + _.minWidth)
-    override val toPatternString: String = patterns.foldLeft("")(_ + _.toPatternString)
+    override val pattern: String = patterns.foldLeft("")(_ + _.pattern)
   }
 
   /** A pattern matching literally, without any wildcards. */
-  final case class LiteralPattern(literal: String) extends Pattern {
-    override def minWidth: Int = literal.length()
-    override def toPatternString: String = literal
+  final case class LiteralPattern(pattern: String) extends Pattern {
+    override def minWidth: Int = pattern.length()
   }
 
   /** A wildcard pattern matching anything but path separator '/' character. */
   final case object AnyStringPattern extends Pattern with WildcardPattern {
-    override val toPatternString: String = "*"
+    override val pattern: String = "*"
   }
 
   /** A wildcard pattern matching anything, inluding path separator. */
   final case object AnythingPattern extends Pattern with WildcardPattern {
-    override val toPatternString: String = "**"
+    override val pattern: String = "**"
   }
 
   /** A wildcard pattern matching any single character except path separator '/' character. */
   final object AnySingleCharacterPattern extends Pattern with SingleCharacterPattern {
     override def matches(c: Char): Boolean = c != '/'
-    override val toPatternString: String = "?"
+    override val pattern: String = "?"
   }
 
   /** A wildcard pattern matching either class or range of characters. */
   final case class BracketPattern(pattern: String) extends Pattern with SingleCharacterPattern {
     val characterCheck: CharacterCheck = CharacterCheck.compile(pattern)
     override def matches(c: Char): Boolean = characterCheck.check(c)
-    override def toPatternString: String = pattern
   }
 
   /** Support for character classes and ranges. */
@@ -281,33 +279,53 @@ object Glob {
       c != '/' && c >= from && c <= to
   }
 
-  /** Single-use, mutable state pattern matcher. */
+  /** An engine that performs match operations on a character sequence by interpreting a Pattern. */
   sealed trait Matcher {
 
-    /** Find if the pattern matches part of the argument string. */
+    /** Attempts to find the next subsequence of the input sequence that matches the pattern. */
     def find(): Boolean
 
-    /** Start position of the match, if any (inclusive). */
+    /** Returns the start index of the previous match.
+      * @throws IllegalStateException - If no match has yet been attempted, or if the previous match operation failed
+      */
     def start(): Int
 
-    /** End position of the match, if any (exclusive). */
+    /** Returns the offset after the last character matched.
+      * @throws IllegalStateException - If no match has yet been attempted, or if the previous match operation failed
+      */
     def end(): Int
   }
 
   final object Matcher {
 
-    final def apply(value: String, pattern: Pattern): Matcher = {
-      lazy val (f, s, e) = find(value, pattern)
+    final def apply(value: String, pattern: Pattern): Matcher =
       new Matcher {
-        override def find(): Boolean = f
-        override def start(): Int = if (s == Int.MaxValue) -1 else s
-        override def end(): Int = if (e == Int.MinValue) -1 else e
-      }
-    }
 
-    final def find(value: String, pattern: Pattern): (Boolean, Int, Int) = {
-      Debug.debug(s"Finding ${pattern.toPatternString} as $pattern in $value\n----------------")
-      val zoom = Zoom(value)
+        var r = false
+        var s = Int.MaxValue
+        var e = Int.MinValue
+
+        override def find(): Boolean = {
+          val (r1, s1, e1) =
+            Matcher.find(value, pattern, if (s == Int.MaxValue) 0 else s + 1)
+          r = r1
+          s = s1
+          e = e1
+          r
+        }
+
+        override def start(): Int =
+          if (r && s != Int.MaxValue) s
+          else throw new IllegalStateException
+
+        override def end(): Int =
+          if (r && e != Int.MinValue) e
+          else throw new IllegalStateException
+      }
+
+    final def find(value: String, pattern: Pattern, startPosition: Int = 0): (Boolean, Int, Int) = {
+      Debug.debug(s"Finding ${pattern.pattern} as $pattern in $value\n----------------")
+      val zoom = Zoom(value, startPosition)
       val possible = computeContour(zoom, pattern) &&
         zoom.closeUpFrameAndResetContour
       val (minFrom, maxTo) = zoom.frame
@@ -369,14 +387,14 @@ object Glob {
         case AnythingPattern =>
           zoom.takeAll()
       }
-      Debug.debug(r, s"Match ${pattern.toPatternString} is ${if (r) "possible" else "not possible"} in\n   $zoom")
+      Debug.debug(r, s"Match ${pattern.pattern} is ${if (r) "possible" else "not possible"} in\n   $zoom")
       r
     }
 
     private def findA(zoom: Zoom, pattern: Pattern, leftToRight: Boolean, adjacent: Boolean, level: Int): Boolean = {
       Debug.debug(
         level,
-        s"findA ${pattern.toPatternString} ${if (leftToRight) ">>>" else "<<<"} ${if (adjacent) "adjacent" else ""} in\n   $zoom"
+        s"findA ${pattern.pattern} ${if (leftToRight) ">>>" else "<<<"} ${if (adjacent) "adjacent" else ""} in\n   $zoom"
       )
       pattern match {
         case CompositePattern(patterns) =>
@@ -419,7 +437,7 @@ object Glob {
           findA(zoom, p, leftToRight, adjacent, level)
 
         case (g: WildcardPattern) :: ps =>
-          Debug.debug(s"L$level wildcard ${g.toPatternString}")
+          Debug.debug(s"L$level wildcard ${g.pattern}")
           val zoom1 = zoom.copyFrameAndResetContour
           zoom1.resizeFrame(g.minWidth, leftToRight)
           findB(zoom1, ps.reverse, !leftToRight, false, level + 1) &&

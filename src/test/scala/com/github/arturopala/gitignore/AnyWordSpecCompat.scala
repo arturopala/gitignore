@@ -98,6 +98,7 @@ trait AnyWordSpecCompat extends munit.FunSuite {
       assertNotEquals(value, expected)
   }
 
+  def a[E <: Throwable: ClassTag]: AnWord[E] = new AnWord[E]
   def an[E <: Throwable: ClassTag]: AnWord[E] = new AnWord[E]
 
   class AnWord[E <: Throwable: ClassTag] {
