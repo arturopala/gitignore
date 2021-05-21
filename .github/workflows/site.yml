@@ -5,8 +5,7 @@ on:
     branches: [ master, main ]
     paths:
       - 'src/docs/**'
-      - '*.scala'
-  release:  
+      - '*.scala' 
 
 jobs:
   site:
@@ -25,8 +24,7 @@ jobs:
           author_name: Artur Opala
           author_email: opala.artur@gmail.com
           message: 'Update README'
-          add: '*.md'   
-          branch: master 
+          add: '*.md' 
       - name: Publish API documentation on Github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
