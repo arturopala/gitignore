@@ -139,8 +139,8 @@ object Glob {
   sealed trait Pattern {
 
     /** Creates a matcher that will match the given input against this pattern. */
-    final def matcher(value: String): Matcher =
-      Matcher(value, this)
+    final def matcher(input: CharSequence): Matcher =
+      Matcher(input, this)
 
     /** A minimum width of the string to be considered a match for this pattern. */
     def minWidth: Int
@@ -298,7 +298,7 @@ object Glob {
 
   final object Matcher {
 
-    final def apply(value: String, pattern: Pattern): Matcher =
+    final def apply(value: CharSequence, pattern: Pattern): Matcher =
       new Matcher {
 
         var r = false
@@ -323,7 +323,7 @@ object Glob {
           else throw new IllegalStateException
       }
 
-    final def find(value: String, pattern: Pattern, startPosition: Int = 0): (Boolean, Int, Int) = {
+    final def find(value: CharSequence, pattern: Pattern, startPosition: Int = 0): (Boolean, Int, Int) = {
       Debug.debug(s"Finding ${pattern.pattern} as $pattern in $value\n----------------")
       val zoom = Zoom(value, startPosition)
       val possible = computeContour(zoom, pattern) &&

@@ -16,13 +16,15 @@
 
 package com.github.arturopala.gitignore
 
-/** A Mutable wrapper of the string
-  * helping to track lookup operations results.
+import scala.annotation.tailrec
+
+/** A Mutable wrapper of the character sequence.
+  * Helps track different lookup operations.
   */
-final class Zoom(value: String) {
+final class Zoom(input: CharSequence) {
 
   private var from: Int = 0
-  private var to: Int = value.length()
+  private var to: Int = input.length()
   private var min: Int = Int.MaxValue
   private var max: Int = Int.MinValue
 
@@ -36,17 +38,17 @@ final class Zoom(value: String) {
   def frameWidth: Int = Math.max(0, to - from)
 
   def contour: (Int, Int) = (min, max)
-  def hasContour: Boolean = max >= 0 && min <= value.length() && min <= max
+  def hasContour: Boolean = max >= 0 && min <= input.length() && min <= max
   def contourLength: Int = if (hasContour) max - min else 0
 
   def minElseBottom: Int = if (min != Int.MaxValue) min else 0
-  def maxElseTop: Int = if (max != Int.MinValue) max else value.length
-  def minElseTop: Int = if (min != Int.MaxValue) min else value.length
+  def maxElseTop: Int = if (max != Int.MinValue) max else input.length
+  def minElseTop: Int = if (min != Int.MaxValue) min else input.length
   def maxElseBottom: Int = if (max != Int.MinValue) max else 0
 
   def setFrame(from: Int, to: Int): Zoom = {
-    this.from = Math.max(Math.min(from, value.length() - 1), 0)
-    this.to = Math.min(value.length(), Math.max(from, to))
+    this.from = Math.max(Math.min(from, input.length() - 1), 0)
+    this.to = Math.min(input.length(), Math.max(from, to))
     this
   }
 
@@ -56,11 +58,59 @@ final class Zoom(value: String) {
     this
   }
 
+  /** Similar to [[String.indexOf]] */
+  def indexOf(string: String): Int = {
+    @tailrec
+    def lookup(
+      stringPos: Int,
+      inputPos: Int,
+      mark: Int,
+      first: Boolean
+    ): Int =
+      if (stringPos == string.length()) mark
+      else if (inputPos == input.length()) -1
+      else {
+        if (input.charAt(inputPos) == string.charAt(stringPos))
+          lookup(stringPos + 1, inputPos + 1, if (first) inputPos else mark, false)
+        else if (first)
+          lookup(0, inputPos + 1, -1, true)
+        else
+          lookup(0, mark + 1, -1, true)
+      }
+
+    if (string.isEmpty) 0
+    else lookup(0, from, -1, true)
+  }
+
+  /** Similar to [[String.lastIndexOf]] */
+  def lastIndexOf(string: String): Int = {
+    @tailrec
+    def lookup(
+      stringPos: Int,
+      inputPos: Int,
+      mark: Int,
+      first: Boolean
+    ): Int =
+      if (stringPos < 0) mark - string.length() + 1
+      else if (inputPos < 0) -1
+      else {
+        if (input.charAt(inputPos) == string.charAt(stringPos))
+          lookup(stringPos - 1, inputPos - 1, if (first) inputPos else mark, false)
+        else if (first)
+          lookup(string.length() - 1, inputPos - 1, -1, true)
+        else
+          lookup(string.length() - 1, mark - 1, -1, true)
+      }
+
+    if (string.isEmpty) 0
+    else lookup(string.length() - 1, to - 1, -1, true)
+  }
+
   /** Lookup for the given string from the left side. */
   def lookupRightFor(string: String, maxDistance: Int = Int.MaxValue): Boolean =
     nonEmpty && {
       Debug.debug(s"lookupRightFor${if (maxDistance == Int.MaxValue) "" else "(adjacent)"}: $string\n   $this")
-      val i = value.indexOf(string, from)
+      val i = indexOf(string)
       (i - from <= maxDistance && i >= from && (i + string.length) <= to) && {
         from = i + string.length
         min = Math.min(min, i)
@@ -74,7 +124,7 @@ final class Zoom(value: String) {
   def lookupLeftFor(string: String, maxDistance: Int = Int.MaxValue): Boolean =
     nonEmpty && {
       Debug.debug(s"lookupLeftFor${if (maxDistance == Int.MaxValue) "" else "(adjacent)"}: $string\n   $this")
-      val i = value.lastIndexOf(string, to - 1)
+      val i = lastIndexOf(string)
       ((to - i - string.length) <= maxDistance && i >= from && (i + string.length) <= to) && {
         to = i
         min = Math.min(min, i)
@@ -88,8 +138,8 @@ final class Zoom(value: String) {
   def lookupFor(string: String): Boolean =
     nonEmpty && {
       Debug.debug(s"lookupFor: $string\n   $this")
-      val i1 = value.indexOf(string, from)
-      val i2 = value.lastIndexOf(string, to - 1)
+      val i1 = indexOf(string)
+      val i2 = lastIndexOf(string)
       min =
         if (i1 >= 0) i1
         else Int.MaxValue
@@ -106,7 +156,7 @@ final class Zoom(value: String) {
       Debug.debug(s"lookupRightWhile:\n   $this")
       var c = maxSteps
       val mark = from
-      while (c > 0 && from < to && check(value(from))) {
+      while (c > 0 && from < to && check(input.charAt(from))) {
         from = from + 1
         c = c - 1
       }
@@ -125,7 +175,7 @@ final class Zoom(value: String) {
       Debug.debug(s"lookupLeftWhile:\n   $this")
       var c = maxSteps
       val mark = to
-      while (c > 0 && to > from && check(value(to - 1))) {
+      while (c > 0 && to > from && check(input.charAt(to - 1))) {
         to = to - 1
         c = c - 1
       }
@@ -141,13 +191,13 @@ final class Zoom(value: String) {
   def lookupWhile(check: Char => Boolean, maxSteps: Int = 0): Boolean = {
     Debug.debug(s"lookupWhile:\n   $this")
     var i1 = from
-    var stop1 = i1 >= to || check(value(i1))
+    var stop1 = i1 >= to || check(input.charAt(i1))
     while (!stop1)
-      stop1 = { i1 = i1 + 1; i1 >= to } || check(value(i1))
+      stop1 = { i1 = i1 + 1; i1 >= to } || check(input.charAt(i1))
     var i2 = to
-    var stop2 = i2 <= from || check(value(i2 - 1))
+    var stop2 = i2 <= from || check(input.charAt(i2 - 1))
     while (!stop2)
-      stop2 = { i2 = i2 - 1; i2 <= from } || check(value(i2 - 1))
+      stop2 = { i2 = i2 - 1; i2 <= from } || check(input.charAt(i2 - 1))
 
     min = Math.min(min, i1)
     max = Math.max(max, i2)
@@ -168,7 +218,7 @@ final class Zoom(value: String) {
       Debug.debug(s"lookupRightUntil:\n   $this")
       var c = maxSteps
       val mark = from
-      while (c > 0 && from < to && !check(value(from))) {
+      while (c > 0 && from < to && !check(input.charAt(from))) {
         from = from + 1
         c = c - 1
       }
@@ -193,7 +243,7 @@ final class Zoom(value: String) {
       Debug.debug(s"lookupLeftUntil:\n   $this")
       var c = maxSteps
       val mark = to
-      while (c > 0 && to > from && !check(value(to - 1))) {
+      while (c > 0 && to > from && !check(input.charAt(to - 1))) {
         to = to - 1
         c = c - 1
       }
@@ -209,13 +259,13 @@ final class Zoom(value: String) {
   def lookupWhileNot(check: Char => Boolean, minSteps: Int = Int.MaxValue, maxSteps: Int = 0): Boolean = {
     Debug.debug(s"lookupUntil:\n   $this")
     var i1 = from
-    var stop1 = i1 >= to || !check(value(i1))
+    var stop1 = i1 >= to || !check(input.charAt(i1))
     while (!stop1)
-      stop1 = { i1 = i1 + 1; i1 >= to } || !check(value(i1))
+      stop1 = { i1 = i1 + 1; i1 >= to } || !check(input.charAt(i1))
     var i2 = to
-    var stop2 = i2 <= from || !check(value(i2 - 1))
+    var stop2 = i2 <= from || !check(input.charAt(i2 - 1))
     while (!stop2)
-      stop2 = { i2 = i2 - 1; i2 <= from } || !check(value(i2 - 1))
+      stop2 = { i2 = i2 - 1; i2 <= from } || !check(input.charAt(i2 - 1))
 
     min = Math.min(min, i1)
     max = Math.max(max, i2)
@@ -348,7 +398,7 @@ final class Zoom(value: String) {
 
   /** Copy frame and reset contour. */
   def copyFrameAndResetContour: Zoom = {
-    val z = Zoom(value)
+    val z = Zoom(input)
     z.from = this.from
     z.to = this.to
     Debug.debug(s"copyFrameAndResetContour:\n   $z")
@@ -357,7 +407,7 @@ final class Zoom(value: String) {
 
   /** Exact copy of this Zoom. */
   def copy: Zoom = {
-    val z = Zoom(value)
+    val z = Zoom(input)
     z.from = this.from
     z.to = this.to
     z.min = this.min
@@ -369,10 +419,10 @@ final class Zoom(value: String) {
     import scala.io.AnsiColor._
     val sb = new StringBuilder()
     var i = 0
-    while (i < value.length()) {
+    while (i < input.length()) {
       if (i >= from && i < to) sb.append(BLUE) else sb.append(CYAN)
       if (i >= min && i < max) sb.append(WHITE_B + BOLD)
-      sb.append(value(i))
+      sb.append(input.charAt(i))
       sb.append(RESET)
       i = i + 1
     }
@@ -387,23 +437,23 @@ final class Zoom(value: String) {
 
 object Zoom {
 
-  def apply(value: String): Zoom =
+  def apply(value: CharSequence): Zoom =
     new Zoom(value)
 
-  def apply(value: String, from: Int): Zoom = {
+  def apply(value: CharSequence, from: Int): Zoom = {
     val z = Zoom(value)
     z.from = from
     z
   }
 
-  def apply(value: String, from: Int, to: Int): Zoom = {
+  def apply(value: CharSequence, from: Int, to: Int): Zoom = {
     val z = Zoom(value)
     z.from = from
     z.to = to
     z
   }
 
-  def apply(value: String, from: Int, to: Int, min: Int, max: Int): Zoom = {
+  def apply(value: CharSequence, from: Int, to: Int, min: Int, max: Int): Zoom = {
     val z = Zoom(value)
     z.from = from
     z.to = to

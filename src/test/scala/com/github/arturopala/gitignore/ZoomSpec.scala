@@ -21,6 +21,42 @@ class ZoomSpec extends AnyWordSpecCompat {
   Debug.isDebug = false
 
   "Zoom" should {
+    "calculate indexOf" in {
+      Zoom("").indexOf("") === "".indexOf("")
+      Zoom("").indexOf("a") === "".indexOf("a")
+      Zoom("a").indexOf("a") === "a".indexOf("a")
+      Zoom("ab").indexOf("a") === "ab".indexOf("a")
+      Zoom("ab").indexOf("b") === "ab".indexOf("b")
+      Zoom("aba").indexOf("b") === "aba".indexOf("b")
+      Zoom("abba").indexOf("bb") === "abba".indexOf("bb")
+      Zoom("abba").indexOf("ba") === "abba".indexOf("ba")
+      Zoom("abba").indexOf("ab") === "abba".indexOf("ab")
+      Zoom("abba").indexOf("aa") === "abba".indexOf("aa")
+      Zoom("abba").indexOf("abb") === "abba".indexOf("abb")
+      Zoom("abba").indexOf("bba") === "abba".indexOf("bba")
+      Zoom("abcba").indexOf("bc") === "abcba".indexOf("bc")
+      Zoom("abcba").indexOf("cb") === "abcba".indexOf("cb")
+      Zoom("abcba").indexOf("bac") === "abcba".indexOf("bac")
+    }
+
+    "calculate lastIndexOf" in {
+      Zoom("").lastIndexOf("") === "".lastIndexOf("")
+      Zoom("").lastIndexOf("a") === "".lastIndexOf("a")
+      Zoom("a").lastIndexOf("a") === "a".lastIndexOf("a")
+      Zoom("ab").lastIndexOf("a") === "ab".lastIndexOf("a")
+      Zoom("ab").lastIndexOf("b") === "ab".lastIndexOf("b")
+      Zoom("aba").lastIndexOf("b") === "aba".lastIndexOf("b")
+      Zoom("abba").lastIndexOf("bb") === "abba".lastIndexOf("bb")
+      Zoom("abba").lastIndexOf("ba") === "abba".lastIndexOf("ba")
+      Zoom("abba").lastIndexOf("ab") === "abba".lastIndexOf("ab")
+      Zoom("abba").lastIndexOf("aa") === "abba".lastIndexOf("aa")
+      Zoom("abba").lastIndexOf("abb") === "abba".lastIndexOf("abb")
+      Zoom("abba").lastIndexOf("bba") === "abba".lastIndexOf("bba")
+      Zoom("abcba").lastIndexOf("bc") === "abcba".lastIndexOf("bc")
+      Zoom("abcba").lastIndexOf("cb") === "abcba".lastIndexOf("cb")
+      Zoom("abcba").lastIndexOf("bac") === "abcba".lastIndexOf("bac")
+    }
+
     "wrap the string and report initial focus details" in {
       Zoom("").frame === (0, 0)
       Zoom("a").frame === (0, 1)
