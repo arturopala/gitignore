@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Artur Opala
+ * Copyright 2021 Artur Opala
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.github.arturopala.gitignore
 
-import java.nio.file.Paths
-
 class GitIgnoreSpec extends AnyWordSpecCompat {
 
   Debug.isDebug = false
@@ -32,7 +30,7 @@ class GitIgnoreSpec extends AnyWordSpecCompat {
 
   "GitIgnore" should {
     "process top directory: target" in {
-      val path = Paths.get("target")
+      val path = List("target")
       gitIgnore1.isIgnored(path, true) shouldBe true
       gitIgnore2.isIgnored(path, true) shouldBe true
       gitIgnore3.isIgnored(path, true) shouldBe true
@@ -168,7 +166,8 @@ class GitIgnoreSpec extends AnyWordSpecCompat {
     }
 
     "process top hidden directory: .git" in {
-      val path = Paths.get(".git")
+      val path = List(".git")
+      //Paths.get(".git").iterator().asScala.map(_.toString).toIterable
       gitIgnore1.isIgnored(path, true) shouldBe true
       gitIgnore2.isIgnored(path, true) shouldBe true
       gitIgnore3.isIgnored(path, true) shouldBe true
@@ -212,7 +211,7 @@ class GitIgnoreSpec extends AnyWordSpecCompat {
     }
 
     "process top file: build.sbt" in {
-      val path = Paths.get("build.sbt")
+      val path = List("build.sbt")
       gitIgnore1.isIgnored(path, false) shouldBe true
       gitIgnore2.isIgnored(path, false) shouldBe false
       gitIgnore3.isIgnored(path, false) shouldBe true
@@ -275,7 +274,7 @@ class GitIgnoreSpec extends AnyWordSpecCompat {
     }
 
     "process top hidden file: .scalafmt.conf" in {
-      val path = Paths.get(".scalafmt.conf")
+      val path = List(".scalafmt.conf")
       gitIgnore1.isIgnored(path, false) shouldBe true
       gitIgnore2.isIgnored(path, false) shouldBe false
       gitIgnore3.isIgnored(path, false) shouldBe true
@@ -285,7 +284,7 @@ class GitIgnoreSpec extends AnyWordSpecCompat {
     }
 
     "process nested directory: project/target" in {
-      val path = Paths.get("project", "target")
+      val path = List("project", "target")
       gitIgnore1.isIgnored(path, true) shouldBe true
       gitIgnore2.isIgnored(path, true) shouldBe true
       gitIgnore3.isIgnored(path, true) shouldBe false
@@ -375,7 +374,7 @@ class GitIgnoreSpec extends AnyWordSpecCompat {
     }
 
     "process nested file: project/plugins.sbt" in {
-      val path = Paths.get("project", "plugins.sbt")
+      val path = List("project", "plugins.sbt")
       gitIgnore1.isIgnored(path, false) shouldBe false
       gitIgnore2.isIgnored(path, false) shouldBe false
       gitIgnore3.isIgnored(path, false) shouldBe false
@@ -386,7 +385,7 @@ class GitIgnoreSpec extends AnyWordSpecCompat {
     }
 
     "process nested file: src/main/resources/application.conf" in {
-      val path = Paths.get("src", "main", "resources", "application.conf")
+      val path = List("src", "main", "resources", "application.conf")
       gitIgnore1.isIgnored(path, false) shouldBe false
       gitIgnore2.isIgnored(path, false) shouldBe false
       gitIgnore3.isIgnored(path, false) shouldBe false
@@ -521,7 +520,7 @@ class GitIgnoreSpec extends AnyWordSpecCompat {
     }
 
     "process nested file: foo/bar/baz/[*?].txt" in {
-      val path = Paths.get("foo", "bar", "baz", "[*?].txt")
+      val path = List("foo", "bar", "baz", "[*?].txt")
       gitIgnore1.isIgnored(path, false) shouldBe false
       gitIgnore2.isIgnored(path, false) shouldBe false
       gitIgnore3.isIgnored(path, false) shouldBe false

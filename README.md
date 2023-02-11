@@ -8,8 +8,8 @@ This is a nano-library for Scala
 
     "com.github.arturopala" %% "gitignore" % "0.2.0"
 
-Cross-compiles to Scala versions `2.13.5`, `2.12.13`, `2.11.12`, `3.0.0`, 
-and ScalaJS version `1.5.1`, and ScalaNative version `0.4.0`.
+Cross-compiles to Scala versions `2.13.10`, `2.12.17`, `3.2.1`, 
+and ScalaJS version `1.12.0`, and ScalaNative version `0.4.9`.
 
 Motivation
 ---

@@ -4,17 +4,15 @@ val developerName = "Artur Opala"
 val developerEmail = "opala.artur@gmail.com"
 val githubUserName = "arturopala"
 
-val scala213 = "2.13.5"
-val scala212 = "2.12.13"
-val scala211 = "2.11.12"
-val dottyNext = "3.0.0"
-val dottyStable = "3.0.0"
-val scalaJSVersion = "1.5.1"
-val scalaNativeVersion = "0.4.0"
-val mUnitVersion = "0.7.26"
+val scala213 = "2.13.10"
+val scala212 = "2.12.17"
+val scala3 = "3.2.1"
+val scalaJSVersion = "1.12.0"
+val scalaNativeVersion = "0.4.9"
+val mUnitVersion = "1.0.0-M7"
 
-val scala2Versions = List(scala213, scala212, scala211)
-val scala3Versions = List(dottyStable /*, dottyNext*/ )
+val scala2Versions = List(scala213, scala212)
+val scala3Versions = List(scala3)
 val allScalaVersions = scala2Versions ++ scala3Versions
 
 inThisBuild(
@@ -53,11 +51,12 @@ lazy val sharedSettings = Seq(
   doc / scalacOptions += "-groups",
   scalacOptions.withRank(KeyRanks.Invisible) += "-Ywarn-unused", // required by `RemoveUnused` rule
   (Test / parallelExecution) := false,
-  headerLicense := Some(HeaderLicense.ALv2("2020", developerName)),
+  headerLicense := Some(HeaderLicense.ALv2("2021", developerName)),
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit"            % mUnitVersion % Test,
     "org.scalameta" %%% "munit-scalacheck" % mUnitVersion % Test
-  )
+  ),
+  testFrameworks += new TestFramework("munit.Framework")
 )
 
 publish / skip := true
@@ -90,7 +89,7 @@ lazy val nativeSettings = List(
   )
 )
 
-lazy val root = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+lazy val root = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("."))
   .settings(sharedSettings)
@@ -116,8 +115,7 @@ lazy val docs = project
       "VERSION"                  -> previousStableVersion.value.getOrElse("0.1.0"),
       "SCALA_NATIVE_VERSION"     -> scalaNativeVersion,
       "SCALA_JS_VERSION"         -> scalaJSVersion,
-      "DOTTY_NEXT_VERSION"       -> dottyNext,
-      "DOTTY_STABLE_VERSION"     -> dottyStable,
+      "DOTTY_STABLE_VERSION"     -> scala3,
       "SUPPORTED_SCALA_VERSIONS" -> allScalaVersions.map(v => s"`$v`").mkString(", ")
     ),
     publish / skip := true

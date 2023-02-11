@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Artur Opala
+ * Copyright 2021 Artur Opala
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.github.arturopala.gitignore
 
-import java.nio.file.Path
-import scala.collection.JavaConverters._
 import scala.annotation.tailrec
 
 /** Filter paths using .gitignore patterns.
@@ -38,33 +36,28 @@ case class GitIgnore(gitPatterns: Seq[String]) {
   lazy val patterns: Seq[Pattern] =
     gitPatterns.map(parseGitPattern)
 
-  final def isIgnored(path: Path): Boolean =
-    isIgnored(
-      path.iterator().asScala.map(_.toString).toIterable,
-      path.toFile().isDirectory()
-    )
-
-  final def isAllowed(path: Path): Boolean =
-    !isIgnored(path)
-
-  final def isIgnored(path: Path, isDirectory: Boolean): Boolean =
-    isIgnored(
-      path.iterator().asScala.map(_.toString).toIterable,
-      isDirectory
-    )
-
-  final def isAllowed(path: Path, isDirectory: Boolean): Boolean =
-    !isIgnored(path, isDirectory)
-
+  /** Check whether path should be ignored
+    * @param path path representes as a sequence of parts
+    * @param isDirectory true if this path represents a directory (folder), false otherwise
+    * @return true if path should be ignored
+    */
   final def isIgnored(path: Iterable[String], isDirectory: Boolean): Boolean =
     isIgnored(
       path.toSeq.mkString("/", "/", if (isDirectory) "/" else "")
     )
 
+  /** Check whether path should be allowed
+    * @param path path representes as a sequence of parts
+    * @param isDirectory true if this path represents a directory (folder), false otherwise
+    * @return true if path should be allowed
+    */
   final def isAllowed(path: Iterable[String], isDirectory: Boolean): Boolean =
     !isIgnored(path, isDirectory)
 
-  /** Path may end with slash [/] only if it denotes a directory. */
+  /** Check whether path should be ignored
+    * @param path path may end with slash [/] only if it denotes a directory
+    * @return true if path should be ignored
+    */
   final def isIgnored(path: String): Boolean = {
     Debug.debug(patterns.mkString("\n"))
     patterns
@@ -74,6 +67,10 @@ case class GitIgnore(gitPatterns: Seq[String]) {
     }
   }
 
+  /** Check whether path should be allowed
+    * @param path path may end with slash [/] only if it denotes a directory
+    * @return true if path should be allowed
+    */
   final def isAllowed(path: String): Boolean =
     !isIgnored(path)
 }
@@ -86,7 +83,7 @@ object GitIgnore {
 
   /** Parse .gitignore file content and return sequence of patterns. */
   final def parseGitIgnore(gitIgnore: String): List[String] =
-    gitIgnore.lines.collect {
+    gitIgnore.linesIterator.collect {
       case line if line.trim.nonEmpty && !line.startsWith("#") =>
         removeTrailingNonEscapedSpaces(line)
     }.toList
