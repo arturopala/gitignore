@@ -6,7 +6,7 @@ GitIgnore
 
 This is a nano-library for Scala
 
-    "com.github.arturopala" %% "gitignore" % "0.3.0"
+    "com.github.arturopala" %% "gitignore" % "0.4.0"
 
     //> using "com.github.arturopala:gitignore:0.3.0"
 
@@ -24,10 +24,6 @@ Scaladoc
 ---
 
 <https://arturopala.github.io/gitignore/latest/api/com/github/arturopala/gitignore/GitIgnore.html>
-
-Try in Scastie
----
-https://scastie.scala-lang.org/arturopala/D8GzZ1LwTIuNr4wBOzcMUg/10.js
 
 Usage
 ---
