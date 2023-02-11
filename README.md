@@ -1,5 +1,10 @@
-![Build](https://github.com/arturopala/gitignore/workflows/Build/badge.svg) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.arturopala/gitignore_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.arturopala/gitignore_2.13)
-[![Scala.js](https://www.scala-js.org/assets/badges/scalajs-1.5.0.svg)](https://www.scala-js.org)
+[![Build and test](https://github.com/arturopala/gitignore/actions/workflows/build.yml/badge.svg)](https://github.com/arturopala/gitignore/actions/workflows/build.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.arturopala/gitignore_2.13.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.github.arturopala%22%20AND%20a:%22gitignore_2.13%22)
+[![Scala.js](https://www.scala-js.org/assets/badges/scalajs-1.12.0.svg)](https://www.scala-js.org)
+![Code size](https://img.shields.io/github/languages/code-size/arturopala/gitignore)
+![GitHub](https://img.shields.io/github/license/arturopala/gitignore)
+![Lift](https://lift.sonatype.com/api/badge/github.com/arturopala/gitignore)
+
 
 GitIgnore
 ===
