@@ -6,9 +6,11 @@ GitIgnore
 
 This is a nano-library for Scala
 
-    "com.github.arturopala" %% "gitignore" % "0.2.0"
+    "com.github.arturopala" %% "gitignore" % "0.3.0"
 
-Cross-compiles to Scala versions `2.13.10`, `2.12.17`, `3.2.1`, 
+    //> using "com.github.arturopala:gitignore:0.3.0"
+
+Cross-compiles to Scala versions `2.13.10`, `2.12.17`, `3.2.2`, 
 and ScalaJS version `1.12.0`, and ScalaNative version `0.4.9`.
 
 Motivation
