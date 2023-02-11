@@ -8,7 +8,7 @@ This is a nano-library for Scala
 
     "com.github.arturopala" %% "gitignore" % "@VERSION@"
 
-    //> using "com.github.arturopala:gitignore:@VERSION@"
+    //> using "com.github.arturopala::gitignore:@VERSION@"
 
 Cross-compiles to Scala versions @SUPPORTED_SCALA_VERSIONS@, 
 and ScalaJS version `@SCALA_JS_VERSION@`, and ScalaNative version `@SCALA_NATIVE_VERSION@`.
