@@ -8,7 +8,7 @@ This is a nano-library for Scala
 
     "com.github.arturopala" %% "gitignore" % "@VERSION@"
 
-    //> using "com.github.arturopala:gitignore:0.3.0"
+    //> using "com.github.arturopala:gitignore:@VERSION@"
 
 Cross-compiles to Scala versions @SUPPORTED_SCALA_VERSIONS@, 
 and ScalaJS version `@SCALA_JS_VERSION@`, and ScalaNative version `@SCALA_NATIVE_VERSION@`.
@@ -18,12 +18,17 @@ Motivation
 
 The [.gitignore](https://git-scm.com/docs/gitignore) has became de-facto standard filter format for project's files and folders. 
 
-This nano-library provides Scala implementation of the `.gitignore` compliant filter, ready to embed in different tools without having to even run `git` command.
+This nano-library provides Scala implementation of the `.gitignore` compliant filter, ready to embed in different tools without having to run `git` command.
 
 Scaladoc
 ---
 
 <https://arturopala.github.io/gitignore/latest/api/com/github/arturopala/gitignore/GitIgnore.html>
+
+Try online in Scastie!
+---
+
+<https://scastie.scala-lang.org/arturopala/D8GzZ1LwTIuNr4wBOzcMUg/11>
 
 Usage
 ---
