@@ -25,9 +25,9 @@ Scaladoc
 
 <https://arturopala.github.io/gitignore/latest/api/com/github/arturopala/gitignore/GitIgnore.html>
 
-Scastie
+Try in Scastie
 ---
-<script src="https://scastie.scala-lang.org/arturopala/D8GzZ1LwTIuNr4wBOzcMUg/10.js"></script>
+https://scastie.scala-lang.org/arturopala/D8GzZ1LwTIuNr4wBOzcMUg/10.js
 
 Usage
 ---
