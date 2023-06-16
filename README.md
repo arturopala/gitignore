@@ -11,9 +11,9 @@ GitIgnore
 
 This is a nano-library for Scala
 
-    "com.github.arturopala" %% "gitignore" % "0.4.0"
+    "com.github.arturopala" %% "gitignore" % "0.5.0"
 
-    //> using "com.github.arturopala::gitignore:0.4.0"
+    //> using "com.github.arturopala::gitignore:0.5.0"
 
 Cross-compiles to Scala versions `2.13.11`, `2.12.18`, `3.3.0`, 
 and ScalaJS version `1.13.1`, and ScalaNative version `0.4.14`.
