@@ -77,6 +77,9 @@ case class GitIgnore(gitPatterns: Seq[String]) {
 
 object GitIgnore {
 
+  final def parse(gitIgnore: Iterator[String]): GitIgnore =
+    GitIgnore(parseGitIgnore(gitIgnore))
+
   /** Parse .gitignore file content into GitIgnore instance. */
   final def parse(gitIgnore: String): GitIgnore =
     GitIgnore(parseGitIgnore(gitIgnore))
@@ -84,6 +87,13 @@ object GitIgnore {
   /** Parse .gitignore file content and return sequence of patterns. */
   final def parseGitIgnore(gitIgnore: String): List[String] =
     gitIgnore.linesIterator.collect {
+      case line if line.trim.nonEmpty && !line.startsWith("#") =>
+        removeTrailingNonEscapedSpaces(line)
+    }.toList
+
+  /** Parse .gitignore lines iterator and return sequence of patterns. */
+  final def parseGitIgnore(linesIterator: Iterator[String]): List[String] =
+    linesIterator.collect {
       case line if line.trim.nonEmpty && !line.startsWith("#") =>
         removeTrailingNonEscapedSpaces(line)
     }.toList
