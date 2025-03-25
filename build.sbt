@@ -4,7 +4,7 @@ val developerName = "Artur Opala"
 val developerEmail = "opala.artur@gmail.com"
 val githubUserName = "arturopala"
 
-val scala213 = "2.13.16"
+val scala213 = "2.13.12"
 val scala3 = "3.3.5"
 val scalaJSVersion = "1.18.2"
 val scalaNativeVersion = "0.5.7"
