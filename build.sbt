@@ -6,7 +6,7 @@ val githubUserName = "arturopala"
 
 val scala213 = "2.13.12"
 val scala3 = "3.3.5"
-val scalaJSVersion = "1.18.2"
+val scalaJSVersion = "1.13.1"
 val scalaNativeVersion = "0.5.7"
 val mUnitVersion = "1.1.0"
 
